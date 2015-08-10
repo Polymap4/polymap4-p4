@@ -22,7 +22,7 @@ import org.apache.commons.logging.LogFactory;
 import org.polymap.core.catalog.resolve.IResourceInfo;
 import org.polymap.core.operation.OperationSupport;
 import org.polymap.core.project.IMap;
-import org.polymap.core.project.operations.NewLayerOperation;
+//import org.polymap.core.project.operations.NewLayerOperation;
 import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.ui.StatusDispatcher;
 
@@ -68,21 +68,21 @@ public class NewLayerContribution
     protected void execute( IContributionSite site ) throws Exception {
         String resId = P4Plugin.instance().localResolver.resourceIdentifier( res.get() );
 
-        NewLayerOperation op = new NewLayerOperation()
-                .tx.put( uowProvider.get().newTx( site.getPanel() ) )
-                .map.put( map.get() )
-                .label.put( res.get().getName() )
-                .resourceIdentifier.put( resId );
-
-        OperationSupport.instance().execute( op, true, false, ev2 -> UIThreadExecutor.async( () -> {
-            if (ev2.getResult().isOK()) {
-                PanelPath panelPath = site.getPanel().getSite().getPath();
-                site.getContext().closePanel( panelPath.removeLast( 1 /*2*/ ) );
-            }
-            else {
-                StatusDispatcher.handleError( "Unable to create new layer.", ev2.getResult().getException() );
-            }
-        }));
+//        NewLayerOperation op = new NewLayerOperation()
+//                .tx.put( uowProvider.get().newTx( site.getPanel() ) )
+//                .map.put( map.get() )
+//                .label.put( res.get().getName() )
+//                .resourceIdentifier.put( resId );
+//
+//        OperationSupport.instance().execute( op, true, false, ev2 -> UIThreadExecutor.async( () -> {
+//            if (ev2.getResult().isOK()) {
+//                PanelPath panelPath = site.getPanel().getSite().getPath();
+//                site.getContext().closePanel( panelPath.removeLast( 1 /*2*/ ) );
+//            }
+//            else {
+//                StatusDispatcher.handleError( "Unable to create new layer.", ev2.getResult().getException() );
+//            }
+//        }));
     }
 
 }
