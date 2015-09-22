@@ -18,14 +18,13 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.widgets.Button;
+import org.polymap.core.runtime.Callback;
 import org.polymap.core.ui.UIUtils;
 import org.polymap.p4.imports.formats.FileDescription;
 import org.polymap.p4.imports.formats.ShapeFileFormats;
 import org.polymap.p4.imports.utils.IssueReporter;
 import org.polymap.rhei.batik.toolkit.md.AbstractFeedbackComponent;
+import org.polymap.rhei.batik.toolkit.md.ActionConfiguration;
 import org.polymap.rhei.batik.toolkit.md.MdListViewer;
 
 /**
@@ -39,9 +38,9 @@ public class ShapeImportPanelUpdater
 
     private final MdListViewer          fileList;
 
-    private final Button                importFab;
+    private Callback<?>                 callback                  = null;
 
-    private SelectionAdapter            selectionListener = null;
+    private ActionConfiguration         importActionConfiguration = null;
 
     private final IssueReporter         issueReporter;
 
@@ -51,14 +50,14 @@ public class ShapeImportPanelUpdater
     /**
      * 
      */
-    public ShapeImportPanelUpdater( List<FileDescription> files, MdListViewer fileList, Button importFab,
-            IssueReporter issueReporter, ShapeFileImporter shapeFileImporter ) {
+    public ShapeImportPanelUpdater( List<FileDescription> files, MdListViewer fileList,
+            ActionConfiguration importActionConfiguration, IssueReporter issueReporter,
+            ShapeFileImporter shapeFileImporter ) {
         this.files = files;
         this.issueReporter = issueReporter;
         this.fileList = fileList;
-        this.importFab = importFab;
+        this.importActionConfiguration = importActionConfiguration;
         this.shapeFileImporter = shapeFileImporter;
-
     }
 
 
@@ -69,36 +68,30 @@ public class ShapeImportPanelUpdater
         boolean valid = new ShapeFileValidator().validateAll( files );
         if (valid) {
             List<FileDescription> shps = files.stream().flatMap( file -> file.getContainedFiles().stream() )
-                    .filter( cf -> cf.name.get().toLowerCase().endsWith( "." + ShapeFileFormats.SHP ) )
+                    .filter( cf -> cf.format.isPresent() && cf.format.get() == ShapeFileFormats.SHP )
                     .collect( Collectors.toList() );
             if (shps.size() > 0) {
-                if (selectionListener != null) {
-                    importFab.removeSelectionListener( selectionListener );
-                }
-                selectionListener = new SelectionAdapter() {
-
-                    private static final long serialVersionUID = -1075952252353984655L;
-
-
-                    @Override
-                    public void widgetSelected( SelectionEvent ev ) {
-                        for (Object shp : shps) {
+                callback = ( Object o ) -> {
+                    for (FileDescription shp : shps) {
+                        if(shp.file.isPresent()) {
                             UIUtils.activateCallback( "importFiles" );
-                            shapeFileImporter.importFiles( (File)shp );
+                            shapeFileImporter.importFiles( shp.file.get() );
                             UIUtils.deactivateCallback( "importFiles" );
                         }
                     }
                 };
-
-                importFab.addSelectionListener( selectionListener );
-                importFab.setVisible( true );
+                importActionConfiguration.setCallback( callback );
                 if (fromUpload) {
-                    issueReporter.showIssue( AbstractFeedbackComponent.MessageType.SUCCESS, root + " successfully uploaded." );
+                    issueReporter.showIssue( AbstractFeedbackComponent.MessageType.SUCCESS, root
+                            + " successfully uploaded." );
                 }
+            }
+            else {
+                importActionConfiguration.setCallback( null );
             }
         }
         else {
-            importFab.setVisible( false );
+            importActionConfiguration.setCallback( null );
         }
     }
 
