@@ -14,34 +14,42 @@
  */
 package org.polymap.p4.data.imports.shapefile;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.MalformedURLException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-import java.io.File;
-import java.io.Serializable;
-
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.swt.widgets.Composite;
 import org.geotools.data.Query;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.opengis.feature.simple.SimpleFeatureType;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.eclipse.swt.widgets.Composite;
-
-import org.eclipse.core.runtime.IProgressMonitor;
-
-import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
-import org.polymap.rhei.batik.toolkit.IPanelToolkit;
-
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.data.imports.ContextIn;
 import org.polymap.p4.data.imports.ContextOut;
 import org.polymap.p4.data.imports.Importer;
+import org.polymap.p4.data.imports.ImporterPrompt.Severity;
 import org.polymap.p4.data.imports.ImporterSite;
+import org.polymap.p4.imports.utils.prompt.CRSPromptBuilder;
+import org.polymap.p4.imports.utils.prompt.CRSSelection;
+import org.polymap.p4.imports.utils.prompt.CharSetSelection;
+import org.polymap.p4.imports.utils.prompt.CharsetPromptBuilder;
+import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
+import org.polymap.rhei.batik.toolkit.IPanelToolkit;
 
 /**
  * 
@@ -51,26 +59,36 @@ import org.polymap.p4.data.imports.ImporterSite;
 public class ShpImporter
         implements Importer {
 
-    private static Log log = LogFactory.getLog( ShpImporter.class );
-    
-    private static final ShapefileDataStoreFactory dsFactory = new ShapefileDataStoreFactory();
-    
-    private ImporterSite                site;
+    private static Log                             log              = LogFactory.getLog( ShpImporter.class );
+
+    private static final ShapefileDataStoreFactory dsFactory        = new ShapefileDataStoreFactory();
+
+    private ImporterSite                           site;
 
     @ContextIn
-    protected List<File>                files;
+    protected List<File>                           files;
 
     @ContextIn
-    protected File                      shp;
+    protected File                                 shp;
 
     @ContextOut
-    private FeatureCollection           features;
+    private FeatureCollection                      features;
 
-    private Exception                   exception;
+    private Exception                              exception;
 
-    private ShapefileDataStore          ds;
+    private ShapefileDataStore                     ds;
 
-    
+    private CharSetSelection                       charSetSelection = new CharSetSelection() {
+        
+        public org.apache.commons.lang3.tuple.Pair<String,String> getDefault() {
+            // this is the default encoding for a data store
+            return Pair.of( "ISO-8859-1", "ISO-8859-1" );
+        }
+    };
+
+    private CRSSelection                           crsSelection     = new CRSSelection();
+
+
     @Override
     public ImporterSite site() {
         return site;
@@ -89,25 +107,107 @@ public class ShpImporter
 
     @Override
     public void createPrompts( IProgressMonitor monitor ) throws Exception {
+        createNewDataStore();
+        handleEncoding();
+        handleCRS();
+    }
+
+
+    private void handleEncoding() {
+        Optional<File> cpgFile = findFileWithExtension( "cpg" );
+        if (cpgFile.isPresent()) {
+            try {
+                String content = FileUtils.readFileToString( cpgFile.get() );
+                Optional<Charset> providedCharset = charSetSelection.getSelectable().stream()
+                        .filter( charsetCode -> content.trim().equalsIgnoreCase( charsetCode.getKey() ) )
+                        .map( pair -> Charset.forName( pair.getKey() ) ).findFirst();
+                if (providedCharset.isPresent()) {
+                    charSetSelection.setSelected( providedCharset.get() );
+                }
+            }
+            catch (Exception e) {
+                site.ok.set( false );
+                exception = e;
+            }
+        }
+        if (charSetSelection.getSelected() == null) {
+            // charset prompt
+            site.newPrompt( "charset" ).summary.put( "Feature content encoding" ).description
+                    .put( "The encoding of the feature content. If unsure use ISO-8859-1." ).value
+                    .put( "ISO-8859-1" ).severity
+                    .put( Severity.VERIFY ).extendedUI.put( new CharsetPromptBuilder( charSetSelection ) );
+        }
+    }
+
+
+    private Optional<File> findFileWithExtension( String extension ) {
+        return files.stream()
+                .filter( file -> extension.equalsIgnoreCase( FilenameUtils.getExtension( file.getName() ) ) )
+                .findFirst();
+    }
+
+
+    private void handleCRS() {
+        Optional<File> prjFile = findFileWithExtension( "prj" );
+        if (prjFile.isPresent()) {
+            try {
+                CoordinateReferenceSystem crs = ShapeFileParserUtil.parsePrjFile( prjFile.get(),
+                        file -> file.getCoordinateReferenceSystem() );
+                if (crs != null) {
+                    crsSelection.setSelected( crs );
+                }
+            }
+            catch (Exception e) {
+                site.ok.set( false );
+                exception = e;
+            }
+        }
+        if (crsSelection.getSelected() == null) {
+            // charset prompt
+            site.newPrompt( "crs" ).summary.put( "Coordinate reference system" ).description
+                    .put( "The coordinate reference system for projecting the feature content. If unsure use EPSG:4326 (= WGS 84)." ).value
+                    .put( "EPSG:4326" ).severity.put( Severity.VERIFY ).extendedUI.put( new CRSPromptBuilder(
+                    crsSelection ) );
+        }
+    }
+
+
+    private void createNewDataStore() throws MalformedURLException, IOException {
+        try {
+            if (ds != null) {
+                ds.dispose();
+            }
+            Map<String,Serializable> params = new HashMap<String,Serializable>();
+            params.put( "url", shp.toURI().toURL() );
+            params.put( "create spatial index", Boolean.TRUE );
+
+            ds = (ShapefileDataStore)dsFactory.createNewDataStore( params );
+        }
+        catch (Exception e) {
+            site.ok.set( false );
+            exception = e;
+        }
     }
 
 
     @Override
     public void verify( IProgressMonitor monitor ) {
         try {
-            if (ds != null) {
-                ds.dispose();
+            if (charSetSelection.getSelected() == null) {
+                charSetSelection.setSelected( ds.getCharset() );
             }
-            Map<String,Serializable> params = new HashMap<String, Serializable>();
-            params.put( "url", shp.toURI().toURL() );
-            params.put( "create spatial index", Boolean.TRUE );
-
-            ds = (ShapefileDataStore)dsFactory.createNewDataStore( params );
+            else {
+                ds.setCharset( charSetSelection.getSelected() );
+            }
+            if (crsSelection.getSelected() != null) {
+                SimpleFeatureType featureType = SimpleFeatureTypeBuilder.retype(ds.getSchema(), crsSelection.getSelected());
+                ds.createSchema(featureType);
+            }
             Query query = new Query();
             query.setMaxFeatures( 10 );
             features = ds.getFeatureSource().getFeatures( query );
             features.accepts( f -> log.info( "Feature: " + f ), null );
-            
+
             site.ok.set( true );
             exception = null;
         }
@@ -121,14 +221,12 @@ public class ShpImporter
     @Override
     public void createResultViewer( Composite parent, IPanelToolkit tk ) {
         if (exception != null) {
-            tk.createFlowText( parent,
-                    "\nUnable to read the data.\n\n" +
-                    "**Reason**: " + exception.getMessage() );            
+            tk.createFlowText( parent, "\nUnable to read the data.\n\n" + "**Reason**: " + exception.getMessage() );
         }
         else {
             SimpleFeatureType schema = (SimpleFeatureType)features.getSchema();
             log.info( "Features: " + features.size() + " : " + schema.getTypeName() );
-            //tk.createFlowText( parent, "Features: *" + features.size() + "*" );
+            // tk.createFlowText( parent, "Features: *" + features.size() + "*" );
             ShpFeatureTableViewer table = new ShpFeatureTableViewer( parent, schema );
             table.setContent( features );
         }
@@ -139,5 +237,4 @@ public class ShpImporter
     public void execute( IProgressMonitor monitor ) throws Exception {
         // everything done in verify()
     }
-    
 }
