@@ -6,7 +6,6 @@
 	<classpathentry excluding="org/polymap/p4/fs/" kind="src" path="src"/>
 	<classpathentry exported="true" kind="lib" path="lib/mockito-all-1.10.19.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-compress-1.9.jar" sourcepath="lib/sources/commons-compress-1.9-sources.zip"/>
-	<classpathentry exported="true" kind="lib" path="lib/hamcrest-core-1.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/javassist-3.19.0-GA.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/objenesis-2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/powermock-api-mockito-1.6.2.jar"/>

@@ -18,6 +18,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.polymap.core.runtime.UIThreadExecutor.asyncFast;
 import static org.polymap.rhei.batik.toolkit.md.dp.dp;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EventObject;
@@ -27,23 +28,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import java.lang.reflect.Field;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import com.google.common.collect.ImmutableList;
-
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
 import org.polymap.core.runtime.SubMonitor;
 import org.polymap.core.runtime.UIJob;
 import org.polymap.core.runtime.config.Configurable;
@@ -52,16 +46,17 @@ import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.ui.FormDataFactory;
 import org.polymap.core.ui.FormLayoutFactory;
 import org.polymap.core.ui.UIUtils;
-
-import org.polymap.rhei.batik.BatikPlugin;
-import org.polymap.rhei.batik.toolkit.IPanelToolkit;
-
 import org.polymap.p4.data.imports.ImporterFactory.ImporterBuilder;
 import org.polymap.p4.data.imports.ImporterPrompt.Severity;
 import org.polymap.p4.data.imports.archive.ArchiveFileImporterFactory;
+import org.polymap.p4.data.imports.geojson.GeojsonImporterFactory;
 import org.polymap.p4.data.imports.refine.csv.CSVFileImporterFactory;
 import org.polymap.p4.data.imports.refine.excel.ExcelFileImporterFactory;
 import org.polymap.p4.data.imports.shapefile.ShpImporterFactory;
+import org.polymap.rhei.batik.BatikPlugin;
+import org.polymap.rhei.batik.toolkit.IPanelToolkit;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Provides the execution context of an {@link Importer}. It handles inbound context
@@ -80,7 +75,8 @@ public class ImporterContext
             ArchiveFileImporterFactory.class, 
             CSVFileImporterFactory.class, 
             ExcelFileImporterFactory.class, 
-            ShpImporterFactory.class  };
+            ShpImporterFactory.class, 
+            GeojsonImporterFactory.class  };
     
     private Importer                        importer;
     

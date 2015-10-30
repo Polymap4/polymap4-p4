@@ -14,34 +14,27 @@
  */
 package org.polymap.p4.data.imports.archive;
 
-import static java.nio.charset.Charset.forName;
 import static org.polymap.rhei.batik.app.SvgImageRegistryHelper.NORMAL24;
 
 import java.util.List;
-
 import java.io.File;
-import java.nio.charset.Charset;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.core.runtime.IProgressMonitor;
-
 import org.polymap.rhei.batik.toolkit.IPanelToolkit;
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.data.imports.ContextIn;
 import org.polymap.p4.data.imports.ContextOut;
 import org.polymap.p4.data.imports.ImportTempDir;
-import org.polymap.p4.data.imports.ImporterPrompt;
-import org.polymap.p4.data.imports.ImporterPrompt.PromptUIBuilder;
 import org.polymap.p4.data.imports.ImporterPrompt.Severity;
 import org.polymap.p4.data.imports.Importer;
 import org.polymap.p4.data.imports.ImporterSite;
+import org.polymap.p4.imports.utils.prompt.CharSetSelection;
+import org.polymap.p4.imports.utils.prompt.CharsetPromptBuilder;
+
 
 /**
  * 
@@ -53,9 +46,6 @@ public class ArchiveFileImporter
 
     private static Log log = LogFactory.getLog( ArchiveFileImporter.class );
 
-    /** Allowed charsets. */
-    public static final Charset[]   CHARSETS = {forName( "UTF-8" ), forName( "ISO-8859-1" ), forName( "IBM437" )};
-    
     protected ImporterSite          site;
     
     @ContextIn
@@ -64,7 +54,7 @@ public class ArchiveFileImporter
     @ContextOut
     protected List<File>            result;
     
-    protected Charset               filenameCharset = CHARSETS[0];
+    private CharSetSelection        charSetSelection = new CharSetSelection();
     
     protected Exception             exception;
     
@@ -94,29 +84,7 @@ public class ArchiveFileImporter
                 .description.put( "The encoding of the filenames. If unsure use UTF8." )
                 .value.put( "UTF8" )
                 .severity.put( Severity.VERIFY )
-                .extendedUI.put( new PromptUIBuilder() {
-                    private Charset charset = null;
-                    @Override
-                    public void submit( ImporterPrompt prompt ) {
-                        filenameCharset = charset;
-                        prompt.ok.set( true );
-                        prompt.value.put( charset.displayName() );                        
-                    }
-                    @Override
-                    public void createContents( ImporterPrompt prompt, Composite parent ) {
-                        for (Charset cs : CHARSETS) {
-                            Button btn = new Button( parent, SWT.RADIO );
-                            btn.setText( cs.displayName() );
-                            btn.setSelection( cs == filenameCharset );
-                            btn.addSelectionListener( new SelectionAdapter() {
-                                @Override
-                                public void widgetSelected( SelectionEvent ev ) {
-                                    charset = cs;
-                                }
-                            });
-                        }
-                    }
-                });
+                .extendedUI.put( new CharsetPromptBuilder( charSetSelection ));
     }
     
     
@@ -128,7 +96,7 @@ public class ArchiveFileImporter
             
             result = new ArchiveReader()
                     .targetDir.put( ImportTempDir.create() )
-                    .charset.put( filenameCharset )
+                    .charset.put( charSetSelection.getSelected() )
                     .run( file, monitor );
             
             exception = null;;
@@ -159,5 +127,4 @@ public class ArchiveFileImporter
     public void execute( IProgressMonitor monitor ) throws Exception {
         // everything is done by verify()
     }
-    
 }
