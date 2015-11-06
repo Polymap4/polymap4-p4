@@ -42,6 +42,9 @@ import org.polymap.p4.data.imports.ImporterPrompt.PromptUIBuilder;
 import org.polymap.p4.data.imports.ImporterPrompt.Severity;
 import org.polymap.p4.data.imports.Importer;
 import org.polymap.p4.data.imports.ImporterSite;
+import org.polymap.p4.imports.utils.ICharSetAware;
+import org.polymap.p4.imports.utils.CharsetPromptBuilder;
+
 
 /**
  * 
@@ -49,13 +52,10 @@ import org.polymap.p4.data.imports.ImporterSite;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class ArchiveFileImporter
-        implements Importer {
+        implements Importer, ICharSetAware {
 
     private static Log log = LogFactory.getLog( ArchiveFileImporter.class );
 
-    /** Allowed charsets. */
-    public static final Charset[]   CHARSETS = {forName( "UTF-8" ), forName( "ISO-8859-1" ), forName( "IBM437" )};
-    
     protected ImporterSite          site;
     
     @ContextIn
@@ -64,7 +64,7 @@ public class ArchiveFileImporter
     @ContextOut
     protected List<File>            result;
     
-    protected Charset               filenameCharset = CHARSETS[0];
+    protected Charset               filenameCharset = null;
     
     protected Exception             exception;
     
@@ -94,29 +94,7 @@ public class ArchiveFileImporter
                 .description.put( "The encoding of the filenames. If unsure use UTF8." )
                 .value.put( "UTF8" )
                 .severity.put( Severity.VERIFY )
-                .extendedUI.put( new PromptUIBuilder() {
-                    private Charset charset = null;
-                    @Override
-                    public void submit( ImporterPrompt prompt ) {
-                        filenameCharset = charset;
-                        prompt.ok.set( true );
-                        prompt.value.put( charset.displayName() );                        
-                    }
-                    @Override
-                    public void createContents( ImporterPrompt prompt, Composite parent ) {
-                        for (Charset cs : CHARSETS) {
-                            Button btn = new Button( parent, SWT.RADIO );
-                            btn.setText( cs.displayName() );
-                            btn.setSelection( cs == filenameCharset );
-                            btn.addSelectionListener( new SelectionAdapter() {
-                                @Override
-                                public void widgetSelected( SelectionEvent ev ) {
-                                    charset = cs;
-                                }
-                            });
-                        }
-                    }
-                });
+                .extendedUI.put( new CharsetPromptBuilder( this ));
     }
     
     
@@ -159,5 +137,15 @@ public class ArchiveFileImporter
     public void execute( IProgressMonitor monitor ) throws Exception {
         // everything is done by verify()
     }
-    
+
+    @Override
+    public Charset getCharset() {
+        return filenameCharset;
+    }
+
+
+    @Override
+    public void setCharset( Charset charset ) {
+        this.filenameCharset = charset;
+    }
 }
