@@ -138,6 +138,7 @@ public class LayersPanel
                 mapViewer.setVisible( (ILayer)elm, isSelected( elm ) );
             }
         });
+        viewer.thirdSecondaryActionProvider.set( new LayerMoveUpActionProvider(mapViewer));
         
         viewer.addOpenListener( new IOpenListener() {
             @Override

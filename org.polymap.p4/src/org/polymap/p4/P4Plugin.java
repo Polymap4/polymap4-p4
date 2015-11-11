@@ -131,6 +131,9 @@ public class P4Plugin
                                         Class<? extends PipelineProcessor> usecase ) throws Exception {
                                     // resolve service
                                     NullProgressMonitor monitor = new NullProgressMonitor();
+                                    if(layer.orderKey.get() == null) {
+                                        layer.orderKey.set( 0 );
+                                    }
                                     DataSourceDescription dsd = LocalResolver
                                             .instance()
                                             .connectLayer( layer, monitor )

@@ -15,14 +15,16 @@
 package org.polymap.p4.map;
 
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
 import org.polymap.core.mapeditor.MapViewer;
+import org.polymap.core.project.ILayer;
 import org.polymap.core.project.IMap;
 import org.polymap.core.project.ProjectNode.ProjectNodeCommittedEvent;
 import org.polymap.core.runtime.event.EventHandler;
@@ -39,8 +41,9 @@ public class ProjectContentProvider
         implements IStructuredContentProvider {
 
     private static Log log = LogFactory.getLog( ProjectContentProvider.class );
-    
-    private IMap                map;
+
+    private IMap       map;
+
 
     private MapViewer           viewer;
 
@@ -57,7 +60,6 @@ public class ProjectContentProvider
                 // XXX check if structural change or just label changed
     }
 
-    
     @EventHandler( display=true, delay=100 )
     protected void mapLayersChanged( List<ProjectNodeCommittedEvent> evs ) {
         log.info( "mapLayersChanged: " + evs );
@@ -68,15 +70,34 @@ public class ProjectContentProvider
     @Override
     public Object[] getElements( Object inputElement ) {
         log.info( "Layers: " + map.layers );
-        return map.layers.toArray();
+        return order( map.layers.toArray() );
     }
 
-    
+    private Object[] order( Object[] array ) {
+        SortedMap<Integer,ILayer> map = new TreeMap<Integer,ILayer>();
+        ILayer layer;
+        for (Object elem : array) {
+            if (elem instanceof ILayer) {
+                layer = (ILayer)elem;
+                if(layer.orderKey.get() != null) {
+                    if(map.get( layer.orderKey.get() ) == null) {
+                        map.put( layer.orderKey.get(), layer );
+                    } else {
+                        map.put( layer.orderKey.get() + 1000, layer );
+                    }
+                } else {
+                    map.put( 1000, layer );
+                }
+            }
+        }
+        return map.values().toArray();
+    }
+
+
     @Override
     public void dispose() {
         log.info( "..." );
         this.map = null;
         EventManager.instance().unsubscribe( this );
     }
-    
 }

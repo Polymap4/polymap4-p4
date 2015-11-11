@@ -17,27 +17,22 @@ package org.polymap.p4.map;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
-
 import org.polymap.core.data.util.Geometries;
 import org.polymap.core.mapeditor.MapViewer;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.project.IMap;
 import org.polymap.core.runtime.i18n.IMessages;
 import org.polymap.core.ui.UIUtils;
-
-import org.polymap.rhei.batik.BatikApplication;
-import org.polymap.rhei.batik.Context;
-import org.polymap.rhei.batik.DefaultPanel;
-import org.polymap.rhei.batik.Memento;
-import org.polymap.rhei.batik.PanelIdentifier;
-import org.polymap.rhei.batik.Scope;
-import org.polymap.rhei.batik.contribution.ContributionManager;
-
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.p4.Messages;
 import org.polymap.p4.P4AppDesign;
@@ -45,6 +40,13 @@ import org.polymap.p4.P4Plugin;
 import org.polymap.p4.project.ProjectRepository;
 import org.polymap.rap.openlayers.control.MousePositionControl;
 import org.polymap.rap.openlayers.control.ScaleLineControl;
+import org.polymap.rhei.batik.BatikApplication;
+import org.polymap.rhei.batik.Context;
+import org.polymap.rhei.batik.DefaultPanel;
+import org.polymap.rhei.batik.Memento;
+import org.polymap.rhei.batik.PanelIdentifier;
+import org.polymap.rhei.batik.Scope;
+import org.polymap.rhei.batik.contribution.ContributionManager;
 
 /**
  * 
@@ -122,7 +124,14 @@ public class ProjectMapPanel
             Memento memento = getSite().getMemento();
             Memento visibleLayers = memento.getChild( "visibleLayers" );
             
+            SortedMap<Integer, ILayer> layersOrdered = new TreeMap<Integer, ILayer>();
             for (ILayer l : mapViewer.getLayers()) {
+                layersOrdered.put(l.orderKey.get(),  l);
+            }
+            List<ILayer> layers = new ArrayList<ILayer>(layersOrdered.values());
+            // add layer with highest order key first
+            Collections.reverse( layers );
+            for (ILayer l : layers) {
                 mapViewer.setVisible( l, visibleLayers.optBoolean( (String)l.id() ).orElse( true ) );
             }
         }
