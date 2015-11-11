@@ -82,14 +82,17 @@ public class LayersPanel
         return parentPanel()
                 .filter( parent -> parent instanceof ProjectMapPanel )
                 .map( parent -> {
-                    getSite().setIcon( P4Plugin.images().svgImage( "layers.svg", NORMAL24 ) );
-                    getSite().setTitle( "" );
-                    getSite().setPreferredWidth( 200 );
+                    setTitle();
                     return true;
                 })
                 .orElse( false );
     }
 
+    private void setTitle() {
+        getSite().setIcon( P4Plugin.images().svgImage( "layers.svg", NORMAL24 ) );
+		getSite().setTitle( "" );
+		getSite().setPreferredWidth( 200 );
+    }
 
     @Override
     public void init() {
@@ -99,6 +102,7 @@ public class LayersPanel
 
     @Override
     public void createContents( Composite parent ) {
+        setTitle();
         parent.setLayout( FormLayoutFactory.defaults().create() );
         
         viewer = ((MdToolkit)getSite().toolkit()).createListViewer( parent, SWT.SINGLE, SWT.FULL_SELECTION );

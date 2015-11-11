@@ -75,6 +75,7 @@ public class NewLayerContribution
             if (ev2.getResult().isOK()) {
                 PanelPath parentPath = site.getPanelSite().path().removeLast( 1 );
                 BatikApplication.instance().getContext().closePanel( parentPath );
+                site.getContext().openPanel( parentPath, ProjectInfoPanel.ID );
 
 //                // close panel and parent, assuming that projct map is root
 //                site.getContext().openPanel( PanelPath.ROOT, new PanelIdentifier( "start" ) );
