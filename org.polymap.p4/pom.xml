@@ -19,11 +19,41 @@
 				<artifactId>tycho-compiler-plugin</artifactId>
 				<configuration>
 					<excludes>
-						<exclude>org/polymap/p4/fs//**/*.java</exclude>
+						<exclude>org/polymap/p4/fs/**/*.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
 			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>test</id>
+						<phase>none</phase>
+					</execution>
+					<execution>
+						<id>test-custom</id>
+						<phase>test</phase>
+						<configuration>
+							<excludes>
+								<!-- 
+									Have to exclude this test, as Maven has some classpath issues
+									when executing the tests:
+									- ClassNotFoundException: org.jaitools.media.jai.rangelookup.RangeLookupDescriptor
+									- ClassNotFoundException: org.jaitools.media.jai.vectorize.VectorizeDescriptor
+									- ClassNotFoundException: org.jaitools.media.jai.contour.ContourDescriptor
+									- ClassNotFoundException: org.jaitools.imageutils.ImageLayout2
+								-->
+								<exclude>**/FileGroupHelperTest.java</exclude>
+							</excludes>
+						</configuration>
+						<goals>
+							<goal>test</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- currently not required, as there are no SVGs to convert in P4 at the moment -->
+			<!-- plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.8</version>
@@ -37,9 +67,11 @@
 								<property name="runtime_classpath" refid="maven.runtime.classpath" />
 								<property name="test_classpath" refid="maven.test.classpath" />
 								<property name="plugin_classpath" refid="maven.plugin.classpath" />
-								
-								<property name="svg-input" value="${project.build.directory}/../resources/icons/svg" />
-								<property name="png-output" value="${project.build.directory}/../resources/icons2" />
+
+								<property name="svg-input"
+									value="${project.build.directory}/../resources/icons/svg" />
+								<property name="png-output"
+									value="${project.build.directory}/../resources/icons2" />
 
 								<path id="svg.maven.classpath">
 									<path refid="maven.runtime.classpath" />
@@ -81,12 +113,17 @@
 						<version>4.3</version>
 					</dependency>
 					<dependency>
+						<groupId>org.apache.xmlgraphics</groupId>
+						<artifactId>batik-transcoder</artifactId>
+						<version>1.7</version>
+					</dependency>
+					<dependency>
 						<groupId>com.google.guava</groupId>
 						<artifactId>guava</artifactId>
 						<version>18.0</version>
 					</dependency>
 				</dependencies>
-			</plugin>
+			</plugin-->
 		</plugins>
 	</build>
 </project>

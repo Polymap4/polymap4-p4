@@ -30,19 +30,24 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.polymap.core.CorePlugin;
 import org.polymap.core.catalog.IMetadata;
 import org.polymap.core.catalog.MetadataQuery;
 import org.polymap.core.catalog.MetadataQuery.ResultSet;
 import org.polymap.core.runtime.event.EventManager;
+import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.LocalCatalog;
 import org.polymap.p4.imports.formats.FileDescription;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Joerg Reichert <joerg@mapzone.io>
  *
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(CorePlugin.class)
 public class ShapeFileValidatorTest {
 
     private ShapeFileValidator              shapeFileValidator;
@@ -106,6 +111,9 @@ public class ShapeFileValidatorTest {
 
 
     private EventManager executeTest( FileDescription fd, boolean expectedValid, String... existingCatalogEntries ) {
+        PowerMockito.mockStatic(CorePlugin.class);
+        PowerMockito.when( CorePlugin.getDataLocation( P4Plugin.instance() ) ).thenReturn( new File("feature") );
+        
         LocalCatalog localCatalog = Mockito.mock( LocalCatalog.class );
         MetadataQuery metadataQuery = Mockito.mock( MetadataQuery.class );
         EventManager eventManager = Mockito.mock( EventManager.class );
