@@ -47,10 +47,10 @@
             id="org.polymap.batikapp.LayersPanel"
             stackPriority="100">
       </panel>
-      <!--panel
+      <panel
             class="org.polymap.p4.imports.ShapeImportPanel"
-            id="org.polymap.p4.ShapeImportPanel">
-      </panel-->
+            id="org.polymap.p4.ImportPanel">
+      </panel>
       <panel
             class="org.polymap.p4.catalog.CatalogPanel"
             id="org.polymap.p4.CatalogPanel">
@@ -64,12 +64,48 @@
             id="org.polymap.p4.project.LayerPanel">
       </panel>
       <panel
+            class="org.polymap.p4.project.ProjectInfoPanel"
+            id="org.polymap.p4.project.ProjectInfoPanel">
+      </panel>
+      <panel
             class="org.polymap.p4.data.imports.ImportPanel"
             id="org.polymap.p4.ImportPanel">
       </panel>
       <panel
-            class="org.polymap.p4.project.ProjectInfoPanel"
-            id="org.polymap.p4.project.ProjectInfoPanel">
+            class="org.polymap.p4.style.StylerPanel"
+            id="org.polymap.p4.StylerPanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.color.ColorPanel"
+            id="org.polymap.p4.ColorPanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.icon.ImagePanel"
+            id="org.polymap.p4.ImagePanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.font.FontPanel"
+            id="org.polymap.p4.FontPanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.label.StyleLabelPointPlacementPanel"
+            id="org.polymap.p4.StyleLabelPointPlacementPanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.label.StyleLabelLinePlacementPanel"
+            id="org.polymap.p4.StyleLabelLinePlacementPanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.label.StyleLabelHaloPanel"
+            id="org.polymap.p4.StyleLabelHaloPanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.point.StyleFigurePanel"
+            id="org.polymap.p4.StyleFigurePanel">
+      </panel>
+      <panel
+            class="org.polymap.p4.style.point.StyleImagePanel"
+            id="org.polymap.p4.StyleImagePanel">
       </panel>
    </extension>
    <!--extension
