@@ -28,11 +28,8 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-
 import org.polymap.core.ui.FormLayoutFactory;
-
 import org.polymap.rhei.batik.toolkit.IPanelToolkit;
-
 import org.polymap.p4.data.imports.ImporterPrompt;
 import org.polymap.p4.data.imports.ImporterPrompt.PromptUIBuilder;
 
@@ -61,7 +58,7 @@ public abstract class FilteredListPromptUIBuilder
         
         Text filterText = on( new Text( parent, SWT.BORDER ) )
                 .left( 0 ).top( label ).right( 100 ).control();
-        filterText.setToolTipText( "Name of the charset or part thereof" );
+        filterText.setToolTipText( getTooltipText() );
         filterText.forceFocus();
 
         org.eclipse.swt.widgets.List list = on( new org.eclipse.swt.widgets.List( parent, SWT.V_SCROLL ) )
@@ -88,6 +85,10 @@ public abstract class FilteredListPromptUIBuilder
             }
         } );
         parent.pack();
+    }
+
+    protected String getTooltipText() {
+        return "";
     }
 
 

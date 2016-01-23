@@ -19,16 +19,13 @@ import static org.apache.commons.io.FilenameUtils.getExtension;
 
 import java.util.List;
 import java.util.Set;
-
 import java.io.File;
 import java.nio.charset.Charset;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.polymap.core.runtime.Streams;
 import org.polymap.core.runtime.Streams.ExceptionCollector;
-
 import org.polymap.p4.data.imports.ImporterPrompt;
 import org.polymap.p4.data.imports.ImporterPrompt.Severity;
 import org.polymap.p4.data.imports.ImporterSite;
@@ -81,6 +78,11 @@ public class CharsetPrompt {
                     @Override
                     protected String initiallySelectedItem() {
                         return selection.displayName();
+                    }
+                    
+                    @Override
+                    protected String getTooltipText() {
+                        return "Name of the charset or part thereof";
                     }
                     
                     @Override
