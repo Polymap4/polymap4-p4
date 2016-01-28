@@ -1,16 +1,14 @@
-/* 
- * polymap.org
- * Copyright (C) 2015, Falko Bräutigam. All rights reserved.
- *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 3.0 of
- * the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+/*
+ * polymap.org Copyright (C) 2015, Falko Bräutigam. All rights reserved.
+ * 
+ * This is free software; you can redistribute it and/or modify it under the terms of
+ * the GNU Lesser General Public License as published by the Free Software
+ * Foundation; either version 3.0 of the License, or (at your option) any later
+ * version.
+ * 
+ * This software is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
  */
 package org.polymap.p4.layer;
 
@@ -66,23 +64,23 @@ import org.polymap.p4.P4Plugin;
  */
 public class FeatureSelectionTable {
 
-    private static Log log = LogFactory.getLog( FeatureSelectionTable.class );
+    private static Log         log = LogFactory.getLog( FeatureSelectionTable.class );
 
-    private FeatureSelection            featureSelection;
-    
-    private FeatureStore                fs;
-    
-    private FeatureCollection           features;
+    private FeatureSelection   featureSelection;
 
-    private FeatureTableViewer          viewer;
-    
-    private PanelSite                   site;
+    private FeatureStore       fs;
 
-    private Text                        searchText;
+    private FeatureCollection  features;
 
-    private Button                      searchBtn;
+    private FeatureTableViewer viewer;
 
-    
+    private PanelSite          site;
+
+    private Text               searchText;
+
+    private Button             searchBtn;
+
+
     public FeatureSelectionTable( Composite parent, FeatureSelection featureSelection, PanelSite site ) {
         BatikApplication.instance().getContext().propagate( this );
         this.featureSelection = featureSelection;
@@ -91,7 +89,8 @@ public class FeatureSelectionTable {
         parent.setLayout( FormLayoutFactory.defaults().create() );
 
         try {
-            this.fs = featureSelection.waitForFs().get();  // already loaded by LayerFeatureTableContribution
+            this.fs = featureSelection.waitForFs().get(); // already loaded by
+                                                          // LayerFeatureTableContribution
             this.features = fs.getFeatures( featureSelection.filter() );
         }
         catch (Exception e) {
@@ -99,11 +98,11 @@ public class FeatureSelectionTable {
             tk().createLabel( parent, "<p>Unable to featch features.</p>Reason: " + e.getLocalizedMessage() );
             return;
         }
-        
+
         // topbar
         Composite topbar = on( tk().createComposite( parent ) ).fill().noBottom().height( 30 ).control();
         topbar.setLayout( FormLayoutFactory.defaults().spacing( 3 ).create() );
-    
+
         // seach
         createTextSearch( topbar );
         on( searchBtn ).fill().noLeft().control();
@@ -113,16 +112,16 @@ public class FeatureSelectionTable {
         createTableViewer( parent );
         on( viewer.getTable() ).fill().top( topbar );
     }
-    
-    
+
+
     protected MdToolkit tk() {
         return (MdToolkit)site.toolkit();
     }
-    
-    
+
+
     protected void createTableViewer( Composite parent ) {
         viewer = new FeatureTableViewer( parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER );
-    
+
         // add columns
         for (PropertyDescriptor prop : features.getSchema().getDescriptors()) {
             if (Geometry.class.isAssignableFrom( prop.getType().getBinding() )) {
@@ -136,22 +135,25 @@ public class FeatureSelectionTable {
         viewer.setContent( features );
 
         // selection -> FeaturePanel
-        viewer.addSelectionChangedListener( (SelectionChangedEvent ev) -> {
+        viewer.addSelectionChangedListener( ( SelectionChangedEvent ev ) -> {
             FeatureTableElement elm = (FeatureTableElement)on( ev.getSelection() ).first().get();
             log.info( "selection: " + elm );
             featureSelection.setClicked( elm.getFeature() );
             BatikApplication.instance().getContext().openPanel( site.path(), FeaturePanel.ID );
-        });
-        
-        // commit events
-        EventManager.instance().subscribe( this, ev -> 
-                ev instanceof FeatureEvent && 
-                ((FeatureEvent)ev).getType() == Type.COMMIT &&
-                ((FeatureEvent)ev).getFeatureSource() == fs);
-    }
-    
+        } );
 
-    @EventHandler( display=true )
+        // commit events
+        EventManager.instance().subscribe( this, ev ->
+                ev instanceof FeatureEvent &&
+                        ((FeatureEvent)ev).getType() == Type.COMMIT &&
+                        ((FeatureEvent)ev).getFeatureSource() == fs );
+
+        EventManager.instance().subscribe( this, ev ->
+                ev instanceof FeatureSelectionEvent);
+    }
+
+
+    @EventHandler(display = true)
     protected void onFeatureChange( FeatureEvent ev ) {
         if (!viewer.getTable().isDisposed()) {
             viewer.refresh();
@@ -160,39 +162,54 @@ public class FeatureSelectionTable {
             EventManager.instance().unsubscribe( this );
         }
     }
+
     
-    
+    @EventHandler(display = true)
+    protected void onFeatureSelectionChange( FeatureSelectionEvent ev ) {
+        if (!viewer.getTable().isDisposed()) {
+            featureSelection = ev.getSource();
+            BatikApplication.instance().getContext().openPanel( site.path(), FeaturePanel.ID );
+        }
+        else {
+            EventManager.instance().unsubscribe( this );
+        }
+    }
+
+
     protected void createTextSearch( Composite topbar ) {
         searchText = tk().createText( topbar, null, SWT.BORDER );
         searchText.setToolTipText( "Beginning of a text to search for. At least 2 characters." );
         searchText.forceFocus();
         searchText.addModifyListener( new ModifyListener() {
+
             @Override
             public void modifyText( ModifyEvent ev ) {
                 searchBtn.setEnabled( searchText.getText().length() > 1 );
             }
-        });
+        } );
         searchText.addKeyListener( new KeyAdapter() {
+
             @Override
             public void keyReleased( KeyEvent ev ) {
                 if (ev.keyCode == SWT.Selection) {
                     search();
                 }
             }
-        });
+        } );
 
         searchBtn = tk().createButton( topbar, null, SWT.PUSH );
         searchBtn.setToolTipText( "Start search" );
         searchBtn.setImage( P4Plugin.images().svgImage( "magnify.svg", SvgImageRegistryHelper.WHITE24 ) );
         searchBtn.addSelectionListener( new SelectionAdapter() {
+
             @Override
             public void widgetSelected( SelectionEvent ev ) {
                 search();
             }
-        });
+        } );
     }
-    
-    
+
+
     protected void search() {
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2( null );
         Filter filter = Filter.INCLUDE;
@@ -201,14 +218,15 @@ public class FeatureSelectionTable {
                 // skip Geometry
             }
             else {
-                PropertyIsLike isLike = ff.like( ff.property( prop.getName() ), searchText.getText() + "*", "*", "?", "\\" );
-                filter = filter == Filter.INCLUDE ? isLike : ff.or( filter, isLike ); 
+                PropertyIsLike isLike = ff.like( ff.property( prop.getName() ), searchText.getText() + "*", "*", "?",
+                        "\\" );
+                filter = filter == Filter.INCLUDE ? isLike : ff.or( filter, isLike );
             }
         }
-        log.info( "FILTER: "  + filter );
+        log.info( "FILTER: " + filter );
         FeatureCollection filtered = features.subCollection( filter );
-        log.info( "RESULT: "  + filtered.size() );
+        log.info( "RESULT: " + filtered.size() );
         viewer.setContent( filtered );
     }
-    
+
 }
