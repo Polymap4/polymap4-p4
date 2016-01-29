@@ -68,7 +68,6 @@ import org.polymap.core.ui.StatusDispatcher;
 import org.polymap.rhei.batik.Context;
 import org.polymap.rhei.batik.DefaultPanel;
 import org.polymap.rhei.batik.PanelIdentifier;
-import org.polymap.rhei.batik.PanelPath;
 import org.polymap.rhei.batik.toolkit.IPanelSection;
 import org.polymap.rhei.batik.toolkit.SimpleDialog;
 import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
@@ -210,7 +209,12 @@ public class ImportPanel
         
         // ImportsContentProvider selects every ImportContext when it is loaded;
         // this triggers expansion and resultViewer (see above)
-        importsList.setInput( context );
+        if (nextContext.isPresent()) {
+            context = nextContext.get();
+            importsList.setInput( nextContext.get() );
+        } else {
+            importsList.setInput( context );
+        }
         
         // result viewer
         resultSection = tk.createPanelSection( parent, "Data preview", SWT.BORDER );
@@ -307,7 +311,7 @@ public class ImportPanel
         
         // close panel
         // XXX assuming that ImportPanel is child of root
-        getContext().openPanel( PanelPath.ROOT, new PanelIdentifier( "start" ) );
+        // getContext().openPanel( PanelPath.ROOT, new PanelIdentifier( "start" ) );
     }
     
     

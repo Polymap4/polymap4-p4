@@ -45,12 +45,18 @@ public class ArchiveFileImporterFactory
 
     @Override
     public void createImporters( ImporterBuilder builder ) throws Exception {
+        handleFile( file, builder );
+        if (files != null) {
+            for(File f: files) {
+                handleFile(f, builder);
+            }
+        }
+    }
+
+
+    private void handleFile( File file, ImporterBuilder builder ) throws Exception {
         if (file != null && new ArchiveReader().canHandle( file, new NullProgressMonitor() )) {
             builder.newImporter( new ArchiveFileImporter(), file );
         }
-        if (files != null) {
-            log.info( "List<File> in context is not yet implemented." );
-        }
     }
-    
 }
