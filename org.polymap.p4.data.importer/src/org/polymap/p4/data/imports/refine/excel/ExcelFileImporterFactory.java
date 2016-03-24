@@ -13,13 +13,15 @@
  */
 package org.polymap.p4.data.imports.refine.excel;
 
-import java.io.File;
+import java.util.List;
 import java.util.Set;
+
+import java.io.File;
+
+import com.google.common.collect.Sets;
 
 import org.polymap.p4.data.imports.ContextIn;
 import org.polymap.p4.data.imports.ImporterFactory;
-
-import com.google.common.collect.Sets;
 
 /**
  * Importerfactory for Excel files.
@@ -33,20 +35,31 @@ public class ExcelFileImporterFactory
 
     @ContextIn
     protected File                  file;
-    //
-    // @ContextIn
-    // protected List<File> files;
+
+    @ContextIn
+    protected List<File>            files;
 
     @ContextIn
     protected Sheet                 sheet;
 
+
     @Override
     public void createImporters( ImporterBuilder builder ) throws Exception {
-        if (isSupported( file ) || sheet != null) {
-            if (sheet == null) {
-                sheet = new Sheet( file, -1, null );
+        handleFile( file, sheet, builder );
+        if (files != null) {
+            for(int i=0; i<files.size(); i++) {
+                handleFile(files.get( i ), null, builder);
             }
-            builder.newImporter( new ExcelFileImporter(), sheet, sheet.file() );
+        }
+    }
+
+
+    private void handleFile( File f, Sheet s, ImporterBuilder builder ) throws Exception {
+        if (isSupported( f ) || s != null) {
+            if (s == null) {
+                s = new Sheet( f, -1, null );
+            }
+            builder.newImporter( new ExcelFileImporter(), s, s.file() );
         }
     }
 

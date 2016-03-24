@@ -18,8 +18,10 @@ import static org.polymap.core.runtime.event.TypeEventFilter.ifType;
 import static org.polymap.core.ui.FormDataFactory.on;
 import static org.polymap.rhei.batik.app.SvgImageRegistryHelper.WHITE24;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import java.io.File;
@@ -51,6 +53,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.client.ClientFile;
 import org.eclipse.rap.rwt.client.service.ClientFileUploader;
@@ -58,6 +62,7 @@ import org.eclipse.rap.rwt.dnd.ClientFileTransfer;
 
 import org.polymap.core.operation.DefaultOperation;
 import org.polymap.core.operation.OperationSupport;
+import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.runtime.event.EventHandler;
 import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.runtime.i18n.IMessages;
@@ -104,7 +109,7 @@ public class ImportPanel
     
     private Context<ImporterContext>    nextContext;
     
-    private ImporterContext             context;
+    private ImporterContext             globalContext;
     
     private boolean                     rootImportPanel;
     
@@ -115,7 +120,6 @@ public class ImportPanel
     private File                        tempDir = ImportTempDir.create();
 
     private Button                      fab;
-
     
     @Override
     public boolean wantsToBeShown() {
@@ -135,7 +139,7 @@ public class ImportPanel
     @Override
     public void init() {
         site().title.set( "Import" );
-        context = nextContext.isPresent() ? nextContext.get() : new ImporterContext(); 
+        globalContext = nextContext.isPresent() ? nextContext.get() : new ImporterContext(); 
 
         // listen to ok (to execute) event from ImporterSite
         EventManager.instance().subscribe( this, ifType( ConfigChangeEvent.class, cce -> 
@@ -146,7 +150,7 @@ public class ImportPanel
 
     @Override
     public void dispose() {
-        nextContext.set( context.importer() != null ? context : null );
+        nextContext.set( globalContext.importer() != null ? globalContext : null );
         EventManager.instance().unsubscribe( this );
     }
 
@@ -210,7 +214,12 @@ public class ImportPanel
         
         // ImportsContentProvider selects every ImportContext when it is loaded;
         // this triggers expansion and resultViewer (see above)
-        importsList.setInput( context );
+        if (nextContext.isPresent()) {
+            globalContext = nextContext.get();
+            importsList.setInput( nextContext.get() );
+        } else {
+            importsList.setInput( globalContext );
+        }
         
         // result viewer
         resultSection = tk.createPanelSection( parent, "Data preview", SWT.BORDER );
@@ -285,7 +294,7 @@ public class ImportPanel
     /**
      * 
      */
-    protected void executeTerminalContext( @SuppressWarnings("hiding") ImporterContext context ) throws Exception {
+    protected void executeTerminalContext( final @SuppressWarnings("hiding") ImporterContext context ) throws Exception {
         // execute
         Map<Class,Object> contextOut = new HashMap();
         DefaultOperation executeOp = new DefaultOperation( "" ) {
@@ -300,17 +309,48 @@ public class ImportPanel
         // copy features
         FeatureCollection features = (FeatureCollection)contextOut.get( FeatureCollection.class );
         if (features != null) {
-            ImportFeaturesOperation op = new ImportFeaturesOperation( context, features );
+            ImportFeaturesOperation op = new ImportFeaturesOperation( context, features ) {
+              
+                @Override
+                protected IStatus doExecute( IProgressMonitor monitor, IAdaptable info ) throws Exception {
+                    IStatus status = super.doExecute( monitor, info );
+                    if(status.isOK()) {
+                        File in = (File) context.getContextIn().get( File.class );
+                        if(in != null) {
+                            List<Object> list = (List<Object>) globalContext.getContextOut().get( List.class );
+                            if(list != null) {
+                                List<File> newList = new ArrayList<File>();
+                                for(Object el : list) {
+                                    if(el instanceof File && in != el) {
+                                        newList.add( (File) el );
+                                    }
+                                }
+                                globalContext.getContextOut().put( List.class, newList );
+                                ((ImportsContentProvider) importsList.getContentProvider()).removeFromCache( globalContext, context );
+                                if(newList.size() > 0) {
+                                    UIThreadExecutor.async( () -> ((ImportsContentProvider) importsList.getContentProvider()).updateElement( globalContext, 0 ), e -> {} );
+                                }
+                            }
+                        }
+                    }
+                    return status;
+                }
+            };
             getContext().propagate( op );
-            OperationSupport.instance().execute( op, false, false );
+            OperationSupport.instance().execute( op, false, false, new JobChangeAdapter() {
+                
+                @Override
+                public void done( IJobChangeEvent event ) {
+                    if(event.getResult().isOK()) {
+                        List<String> list = (List<String>) globalContext.getContextOut().get( List.class );
+                        if(list == null || list.size() == 0) {
+                            getContext().openPanel( PanelPath.ROOT, new PanelIdentifier( "start" ) );
+                        }
+                    }
+                }
+            });
         }
-        
-        // close panel
-        // XXX assuming that ImportPanel is child of root
-        getContext().openPanel( PanelPath.ROOT, new PanelIdentifier( "start" ) );
     }
-    
-    
     
     
     protected void createPromptViewer( ImporterPrompt prompt ) {
@@ -352,7 +392,7 @@ public class ImportPanel
 
         async( () -> {
             // fires event which triggers UI update in ImportsContentProvider
-            context.addContextOut( f );
+            globalContext.addContextOut( f );
         });
     }
 

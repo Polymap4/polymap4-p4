@@ -378,6 +378,16 @@ public class ImporterContext
     }
     
     
+    public Map<Class,Object> getContextOut() {
+        return contextOut;
+    }
+
+    
+    public Map<Class,Object> getContextIn() {
+        return contextIn;
+    }
+    
+    
     /**
      * Fired when {@link ImporterContext#addContextIn(Object)} is called after a file
      * was uploaded or anything else has been added to the context. Also fired when a

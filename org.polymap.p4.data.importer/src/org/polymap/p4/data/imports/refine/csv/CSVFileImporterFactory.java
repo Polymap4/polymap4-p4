@@ -45,12 +45,22 @@ public class CSVFileImporterFactory
 
     @Override
     public void createImporters( ImporterBuilder builder ) throws Exception {
-        if (isSupported( file )) {
-            builder.newImporter( new CSVFileImporter(), file );
+        handleFile( file, builder );
+        if (files != null) {
+            for(File f: files) {
+                handleFile(f, builder);
+            }
         }
     }
 
 
+    private void handleFile( File f, ImporterBuilder builder ) throws Exception {
+        if (isSupported( f )) {
+            builder.newImporter( new CSVFileImporter(), f );
+        }
+    }
+
+    
     private boolean isSupported( File file ) {
         if (file == null) {
             return false;

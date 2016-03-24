@@ -16,6 +16,7 @@ package org.polymap.p4.data.imports;
 import static org.polymap.core.runtime.UIThreadExecutor.asyncFast;
 import static org.polymap.core.runtime.UIThreadExecutor.logErrorMsg;
 
+import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -184,6 +185,23 @@ class ImportsContentProvider
         }
     }
     
+    
+    public void removeFromCache(Object root, Object child) {
+        Object[] cached = cache.get( root );
+        if(cached == CACHE_LOADING) {
+            return;    
+        }
+        if (cached != null) {
+            List<Object> newCache = new ArrayList<Object>();
+            for(Object el : cached) {
+                if(el != child) {
+                    newCache.add( el );
+                }
+            }
+            cache.put( root, newCache.toArray() );
+        }
+    }
+    
 
     protected void updateChildrenLoading( Object elm ) {
         cache.put( elm, CACHE_LOADING );
@@ -210,6 +228,9 @@ class ImportsContentProvider
 
     @Override
     public void updateElement( Object parent, int index ) {
+        if(parent == null) {
+            return;
+        }
         Object[] children = cache.get( parent );
         if (children != null && children.length > 0) {
             viewer.replace( parent, index, children[index] );
