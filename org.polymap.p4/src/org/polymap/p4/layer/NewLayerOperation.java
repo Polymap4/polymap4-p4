@@ -16,7 +16,6 @@ package org.polymap.p4.layer;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.operation.projection.ProjectionException;
-import org.opengis.feature.type.FeatureType;
 import org.opengis.geometry.BoundingBox;
 
 import org.apache.commons.logging.Log;
@@ -31,7 +30,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
 import org.polymap.core.catalog.resolve.IResourceInfo;
-import org.polymap.core.data.util.NameImpl;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.runtime.config.Config2;
@@ -129,11 +127,14 @@ public class NewLayerOperation
 
         // super
         IStatus superResult = super.doWithCommit( monitor, info );
-        
-        FeatureType schema = P4Plugin.localCatalog().localFeaturesStore().getSchema( new NameImpl(label.get()) );
-        if (schema.getGeometryDescriptor() != null) {
-            // mab bbox
-            if (superResult.isOK()) {
+
+        if (superResult.isOK()) {
+            if (!res.isPresent()) {
+                res.set( AllResolver.instance().resInfo( layer.get(), monitor ).get() );
+            }
+            ReferencedEnvelope nativeLayerBounds = res.get().getBounds();
+            if (nativeLayerBounds != null && !nativeLayerBounds.isNull()) {
+                // mab bbox
                 adaptMapBBox( monitor );
             }
         }
