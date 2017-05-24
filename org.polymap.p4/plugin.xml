@@ -83,7 +83,7 @@
             stackPriority="-1000">
       </panel>
       <panel
-            class="org.polymap.p4.process.ModuleProcessPanel"
+            class="org.polymap.p4.process.ProcessModulePanel"
             id="org.polymap.p4.ProcessModulePanel">
       </panel>
       <panel
@@ -92,7 +92,7 @@
             stackPriority="95">
       </panel>
       <panel
-            class="org.polymap.p4.process.ProgressPanel"
+            class="org.polymap.p4.process.ProcessProgressPanel"
             id="org.polymap.p4.ProgressPanel"
             stackPriority="-900">
       </panel>

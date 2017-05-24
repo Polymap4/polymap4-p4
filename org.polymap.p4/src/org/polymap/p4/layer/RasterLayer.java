@@ -117,6 +117,7 @@ public class RasterLayer {
     
     
     protected RasterLayer( ILayer layer ) {
+        assert layer != null;
         this.layer = layer;
     }
 

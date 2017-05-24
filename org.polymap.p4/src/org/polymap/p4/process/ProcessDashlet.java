@@ -59,7 +59,7 @@ import org.polymap.p4.layer.RasterLayer;
 
 /**
  * Shows a list of available processing modules ({@link JGTModel}). Lets the user
- * choose one to process in {@link ModuleProcessPanel}.
+ * choose one to process in {@link ProcessModulePanel}.
  *
  * @author Falko Bräutigam
  */
@@ -72,7 +72,7 @@ public class ProcessDashlet
     @Scope( P4Plugin.Scope )
     private Context<ILayer>         layer;
     
-    /** Outbound: for {@link ModuleProcessPanel} */
+    /** Outbound: for {@link ProcessModulePanel} */
     @Scope( P4Plugin.Scope )
     private Context<BackgroundJob>  bgjob;
     
@@ -96,7 +96,6 @@ public class ProcessDashlet
         this.tk = (MdToolkit)getSite().toolkit();                    
         //site.constraints.get().add( new MinHeightConstraint( 600, 1 ) );
     }
-
 
 
     @Override
@@ -186,7 +185,7 @@ public class ProcessDashlet
         list.addOpenListener( ev -> {
             ModuleInfo moduleInfo = (ModuleInfo)((IStructuredSelection)list.getSelection()).getFirstElement();
             bgjob.set( new BackgroundJob( moduleInfo, layer.get() ) );
-            BatikApplication.instance().getContext().openPanel( panelSite.path(), ModuleProcessPanel.ID );
+            BatikApplication.instance().getContext().openPanel( panelSite.path(), ProcessModulePanel.ID );
         });
         list.setContentProvider( new ListTreeContentProvider() );
         list.setComparator( new ViewerComparator() {

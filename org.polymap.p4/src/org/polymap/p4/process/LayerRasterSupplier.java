@@ -121,7 +121,8 @@ public class LayerRasterSupplier
         combo.addSelectionChangedListener( ev -> {
             supply();
         });
-        combo.setSelection( new StructuredSelection( site.layer.orElse( layers.get( 0 ) ) ) );
+        ILayer layer = site.layer.orElse( layers.get( 0 ) );
+        combo.setSelection( new StructuredSelection( layer ) );
         //combo.getCombo().forceFocus();
     }
 

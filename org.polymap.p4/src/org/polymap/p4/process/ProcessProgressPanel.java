@@ -52,14 +52,14 @@ import org.polymap.p4.process.ProcessProgressMonitor.ProgressEvent;
  *
  * @author Falko Bräutigam
  */
-public class ProgressPanel
+public class ProcessProgressPanel
         extends P4Panel {
 
-    private static final Log log = LogFactory.getLog( ProgressPanel.class );
+    private static final Log log = LogFactory.getLog( ProcessProgressPanel.class );
     
     public static final PanelIdentifier ID = PanelIdentifier.parse( "processProgress" );
 
-    /** Outbound: for {@link ModuleProcessPanel} */
+    /** Outbound: for {@link ProcessModulePanel} */
     @Scope( P4Plugin.Scope )
     private Context<BackgroundJob>  bgjob;
     
@@ -109,7 +109,7 @@ public class ProgressPanel
         list.addOpenListener( ev -> {
             BackgroundJob selected = (BackgroundJob)((IStructuredSelection)list.getSelection()).getFirstElement();
             bgjob.set( selected );
-            BatikApplication.instance().getContext().openPanel( site().path(), ModuleProcessPanel.ID );
+            BatikApplication.instance().getContext().openPanel( site().path(), ProcessModulePanel.ID );
         });
         list.setContentProvider( new ListTreeContentProvider() );
 //        list.setComparator( new ViewerComparator() {

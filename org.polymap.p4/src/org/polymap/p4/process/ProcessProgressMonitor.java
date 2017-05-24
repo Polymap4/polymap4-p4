@@ -14,8 +14,6 @@
  */
 package org.polymap.p4.process;
 
-import static org.apache.commons.lang3.StringUtils.removeEnd;
-
 import java.util.EventObject;
 import java.util.Optional;
 
@@ -25,17 +23,11 @@ import org.jgrasstools.gears.libs.monitor.IJGTProgressMonitor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.google.common.base.Joiner;
-
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.event.EventManager;
-import org.polymap.core.ui.FormDataFactory;
-import org.polymap.core.ui.FormLayoutFactory;
 
 /**
  * 
@@ -65,32 +57,12 @@ public class ProcessProgressMonitor
     /** The display of the last {@link #createContents(Composite)}. */
     private Display         display;
     
-    private Label           msg;
-
     
     public ProcessProgressMonitor( BackgroundJob bgjob ) {
         this.bgjob = bgjob;
         taskName = "Start processing";
     }
 
-    /**
-     * (Re-)Creates the UI under the given parent.
-     */
-    public void createContents( Composite parent ) {
-        // FIXME multiple sessions
-        display = parent.getDisplay();
-        
-        parent.setLayout( FormLayoutFactory.defaults().margins( 0, 30 ).create() );
-        Label wheel = new Label( parent, SWT.CENTER );
-        wheel.setLayoutData( FormDataFactory.filled().noBottom().create() );
-        wheel.setText( "Crunching data..." );
-       // wheel.setImage( BatikPlugin.images().image( "resources/icons/loading24.gif" ) );
-
-        msg = new Label( parent, SWT.CENTER );
-        msg.setLayoutData( FormDataFactory.filled().top( wheel, 10 ).create() );        
-        update( false );
-    }
-    
     /**
      * 
      *
@@ -103,18 +75,6 @@ public class ProcessProgressMonitor
         updated.start();
 
         EventManager.instance().publish( new ProgressEvent( bgjob ) );
-        
-        if (display != null && !display.isDisposed()) {
-            display.asyncExec( () -> {
-                if (msg != null && !msg.isDisposed()) {
-                    StringBuilder s = new StringBuilder( 256 ).append( 
-                            Joiner.on( " " ).skipNulls().join( removeEnd( taskName, "..." ), " ...", subTaskName ) );
-                    completed().ifPresent( value -> 
-                            s.append( " (" ).append( value ).append( "%)" ) );
-                    msg.setText( s.toString() );
-                }
-            });
-        }
     }
 
     /**
@@ -149,16 +109,15 @@ public class ProcessProgressMonitor
         this.canceled = canceled;
     }
 
-
     @Override
     public void beginTask( String name, int totalWork ) {
-        this.taskName = name;
         this.total = totalWork;
-        update( false );
+        setTaskName( name );
     }
 
     @Override
     public void setTaskName( String name ) {
+        assert name != null;
         this.taskName = name;
         update( false );
     }
@@ -177,7 +136,8 @@ public class ProcessProgressMonitor
 
     
     /**
-     * Fired when {@link ProcessProgressMonitor} changes its progression state.
+     * Fired when {@link ProcessProgressMonitor} changes its progression state. Event
+     * rate is throttled by {@link ProcessProgressMonitor} to about 1/s.
      */
     public class ProgressEvent
             extends EventObject {
@@ -187,12 +147,20 @@ public class ProcessProgressMonitor
         }
 
         @Override
-        public Object getSource() {
+        public BackgroundJob getSource() {
             return (BackgroundJob)super.getSource();
         }
 
         public Optional<Integer> completed() {
             return ProcessProgressMonitor.this.completed();
+        }
+        
+        public String taskName() {
+            return taskName;
+        }
+        
+        public Optional<String> subTaskName() {
+            return Optional.ofNullable( subTaskName );
         }
     }
 

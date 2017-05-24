@@ -24,8 +24,6 @@ import org.jgrasstools.gears.libs.monitor.IJGTProgressMonitor;
 
 import com.google.common.base.Throwables;
 
-import org.eclipse.swt.widgets.Composite;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -36,6 +34,8 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 
 import org.polymap.core.data.process.ModuleInfo;
 import org.polymap.core.project.ILayer;
+
+import org.polymap.p4.project.ProjectRepository;
 
 /**
  * Implementation of a long running background job for data processing.
@@ -64,7 +64,8 @@ class BackgroundJob {
      * Test
      */
     static {
-        jobs.add( new BackgroundJob( ModuleInfo.of( ATestModule.class ), null ).start() );
+        jobs.add( new BackgroundJob( ModuleInfo.of( ATestModule.class ), null )
+                .start( new JobChangeAdapter() ) );
     }
     
     /**
@@ -76,7 +77,7 @@ class BackgroundJob {
 
     // instance *******************************************
     
-    private ILayer                  layer;
+    private String                  layerId;
     
     private ModuleInfo              moduleInfo;
 
@@ -91,7 +92,7 @@ class BackgroundJob {
     
     public BackgroundJob( ModuleInfo moduleInfo, ILayer layer ) {
         assert moduleInfo != null;
-        this.layer = layer;
+        this.layerId = layer != null ? layer.id() : null;
         this.moduleInfo = moduleInfo;
         this.module = moduleInfo.createInstance();
         this.monitor = new ProcessProgressMonitor( this );
@@ -105,8 +106,13 @@ class BackgroundJob {
         return module;
     }
     
-    public ILayer layer() {
-        return layer;
+    /**
+     * The layer this job was created for. 
+     */
+    public Optional<ILayer> layer() {
+        return Optional.ofNullable( layerId != null 
+                ? ProjectRepository.unitOfWork().entity( ILayer.class, layerId ) 
+                : null );
     }
     
     public State state() {
@@ -134,14 +140,9 @@ class BackgroundJob {
     public Optional<Integer> completed() {
         return monitor.completed();
     }
-
-    public void reportProgress( Composite parent, IJobChangeListener listener ) {
-        monitor.createContents( parent );
-        job.addJobChangeListener( listener );
-    }
-
     
-    public BackgroundJob start() {
+
+    public BackgroundJob start( IJobChangeListener listener ) {
         assert state != State.RUNNING;
         monitor.reset();
         job = new Job( "Processing" ) {
@@ -163,6 +164,7 @@ class BackgroundJob {
             }
         };
         job.setPriority( Job.BUILD );
+        job.addJobChangeListener( listener );
         job.addJobChangeListener( new JobChangeAdapter() {
             @Override
             public void running( IJobChangeEvent ev ) {

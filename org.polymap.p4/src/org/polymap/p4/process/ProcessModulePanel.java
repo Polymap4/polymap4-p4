@@ -15,6 +15,8 @@
 package org.polymap.p4.process;
 
 import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.apache.commons.lang3.StringUtils.removeEnd;
+import static org.polymap.core.runtime.event.TypeEventFilter.isType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,7 @@ import org.jgrasstools.gears.libs.monitor.IJGTProgressMonitor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 
 import org.eclipse.swt.SWT;
@@ -47,6 +50,8 @@ import org.polymap.core.data.process.ui.FieldIO;
 import org.polymap.core.data.process.ui.FieldViewer;
 import org.polymap.core.data.process.ui.FieldViewerSite;
 import org.polymap.core.project.ILayer;
+import org.polymap.core.runtime.event.EventHandler;
+import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.ui.ColumnDataFactory;
 import org.polymap.core.ui.ColumnLayoutFactory;
 import org.polymap.core.ui.FormDataFactory;
@@ -64,16 +69,17 @@ import org.polymap.rhei.batik.toolkit.IPanelSection;
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.process.BackgroundJob.State;
+import org.polymap.p4.process.ProcessProgressMonitor.ProgressEvent;
 
 /**
  * Provides UI for a given {@link BackgroundJob}. 
  *
  * @author Falko Bräutigam
  */
-public class ModuleProcessPanel
+public class ProcessModulePanel
         extends P4Panel {
 
-    private static final Log log = LogFactory.getLog( ModuleProcessPanel.class );
+    private static final Log log = LogFactory.getLog( ProcessModulePanel.class );
 
     public static final PanelIdentifier ID = PanelIdentifier.parse( "processModule" );
 
@@ -110,13 +116,15 @@ public class ModuleProcessPanel
     
     private List<FieldViewer>       inputFields = new ArrayList();
 
+    private Label                   progress;
+
     
     @Override
     public void init() {
         super.init();
         moduleInfo = bgjob.get().moduleInfo();
         module = bgjob.get().module();
-        layer = bgjob.get().layer();
+        layer = bgjob.get().layer().orElse( null );
     }
 
     
@@ -135,23 +143,64 @@ public class ModuleProcessPanel
         
         parent.setLayout( FormLayoutFactory.defaults().spacing( 8 ).margins( 2, 8 ).create() );
         
+        // input
         inputSection = createInputSection();
         FormDataFactory.on( inputSection.getControl() ).fill().noBottom().width( 500 );
 
+        // buttons
         buttons = createButtonsSection();
         FormDataFactory.on( buttons ).fill().top( inputSection.getControl() ).noBottom();
 
+        // output
         if (bgjob.get().state() != State.NOT_YET_STARTED) {
             outputSection = createOutputSection();
             FormDataFactory.on( outputSection.getControl() ).fill().top( buttons ).noBottom();
 
             if (bgjob.get().state() == State.RUNNING) {
-                bgjob.get().reportProgress( outputSection.getBody(), onJobChange() );
+                createProgressContents();
             }
             else {
                 fillOutputFields();
                 parent.layout( true, true );
             }
+        }
+    }
+
+
+    /**
+     * Creates the UI under the given parent.
+     */
+    protected void createProgressContents() {
+        outputSection.getBody().setLayout( FormLayoutFactory.defaults().margins( 0, 30 ).create() );
+        
+        Label wheel = new Label( outputSection.getBody(), SWT.CENTER );
+        wheel.setLayoutData( FormDataFactory.filled().noBottom().create() );
+        wheel.setText( "Crunching data..." );
+       // wheel.setImage( BatikPlugin.images().image( "resources/icons/loading24.gif" ) );
+
+        progress = new Label( outputSection.getBody(), SWT.CENTER );
+        progress.setLayoutData( FormDataFactory.filled().top( wheel, 10 ).create() );
+        
+        EventManager.instance().subscribe( this, isType( ProgressEvent.class, ev -> { 
+            return ev.getSource() == bgjob.get();
+        }));
+    }
+
+
+    @EventHandler( scope=org.polymap.core.runtime.event.Event.Scope.JVM, display=true, delay=500 )
+    protected void onProgressEvent( List<ProgressEvent> evs ) {
+        if (parent.isDisposed() || progress.isDisposed()) {
+            EventManager.instance().unsubscribe( this );
+        }
+        else {
+            parent.getDisplay().asyncExec( () -> {
+                ProgressEvent ev = evs.get( 0 );
+                StringBuilder s = new StringBuilder( 256 ).append( 
+                        Joiner.on( " " ).skipNulls().join( removeEnd( ev.taskName(), "..." ), " ...", ev.subTaskName().orElse( null ) ) );
+                ev.completed().ifPresent( value -> 
+                        s.append( " (" ).append( value ).append( "%)" ) );
+                progress.setText( s.toString() );
+            });
         }
     }
 
@@ -199,7 +248,7 @@ public class ModuleProcessPanel
 
     protected Composite createButtonsSection() {
         Composite section = tk().createComposite( parent );
-        section.setLayout( RowLayoutFactory.fillDefaults().spacing( 8 ).margins( 2, 2 ).fill( true ).justify( true ).create() );
+        section.setLayout( RowLayoutFactory.fillDefaults().spacing( 8 ).margins( 2, 3 ).fill( true ).justify( true ).create() );
         
         startBtn = tk().createButton( section, "", SWT.PUSH );
         startBtn.setLayoutData( RowDataFactory.swtDefaults().hint( 150, SWT.DEFAULT ).create() );
@@ -250,17 +299,17 @@ public class ModuleProcessPanel
         }
 
         // start BackgroundJob
-        bgjob.get().start();
+        bgjob.get().start( jobChangeListener() );
         
         // connect monitor
-        bgjob.get().reportProgress( outputSection.getBody(), onJobChange() );
+        createProgressContents();
         parent.layout( true, true );
         
         updateStartBtn();
     }
 
     
-    protected IJobChangeListener onJobChange() {
+    protected IJobChangeListener jobChangeListener() {
         Display display = startBtn.getDisplay();
         return new JobChangeAdapter() {
             @Override
@@ -286,7 +335,7 @@ public class ModuleProcessPanel
                                 msg.setForeground( FieldViewer.errorColor() );
                                 msg.setText( defaultString( e != null 
                                         ? Throwables.getRootCause( e ).getMessage() 
-                                                : ev.getResult().getMessage(),
+                                        : ev.getResult().getMessage(),
                                         "-" ) );
                                 FormDataFactory.on( msg ).fill().width( 200 );
                             }
