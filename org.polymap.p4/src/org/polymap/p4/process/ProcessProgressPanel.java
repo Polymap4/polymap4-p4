@@ -14,7 +14,9 @@
  */
 package org.polymap.p4.process;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -64,6 +66,9 @@ public class ProcessProgressPanel
     private Context<BackgroundJob>  bgjob;
     
     private MdListViewer            list;
+
+    /** The input of the {@link #list}. */
+    private Set<BackgroundJob>      listInput;
     
 
     @Override
@@ -118,7 +123,7 @@ public class ProcessProgressPanel
 //                return ((ModuleInfo)elm1).title().compareTo( ((ModuleInfo)elm2).title() );
 //            }
 //        });
-        list.setInput( BackgroundJob.running() );
+        list.setInput( listInput = new HashSet( BackgroundJob.running() ) );
       
         // listen to ProgressEvent
         EventManager.instance().subscribe( this );
@@ -131,7 +136,14 @@ public class ProcessProgressPanel
     @EventHandler( scope=org.polymap.core.runtime.event.Event.Scope.JVM, display=true, delay=500 )
     protected void onProgressEvent( List<ProgressEvent> evs ) {
         for (ProgressEvent ev : evs) {
-            list.update( ev.getSource(), null );
+            if (listInput.contains( ev.getSource() )) {
+                // simple update if this job is in the list already
+                list.update( ev.getSource(), null );
+            }
+            else {
+                // refresh entire list if this job was not seen before
+                list.setInput( listInput = new HashSet( BackgroundJob.running() ) );
+            }
         }
     }
     
