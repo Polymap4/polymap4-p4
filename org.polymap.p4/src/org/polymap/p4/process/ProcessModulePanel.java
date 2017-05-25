@@ -129,10 +129,19 @@ public class ProcessModulePanel
 
     
     @Override
-    public void dispose() {
-//        if (!bgjob.get().isRunning()) {
-//            bgjob.get().dispose();
-//        }
+    public boolean beforeDispose() {
+        if (bgjob.get().state() == State.ENDED) {
+            tk().createSimpleDialog( "Job completed" )
+                    .setContents( p -> {
+                        tk().createFlowText( p, "Do you want to remove this job?" );
+                    })
+                    .addYesAction( ev -> {
+                        bgjob.get().dispose();
+                    })
+                    .addNoAction()
+                    .open();
+        }
+        return true;
     }
 
 
