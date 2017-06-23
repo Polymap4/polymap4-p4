@@ -160,7 +160,7 @@ public class ProcessProgressPanel
         @Override
         public void update( ViewerCell cell ) {
             BackgroundJob elm = (BackgroundJob)cell.getElement();
-            String s = elm.completed().map( v -> v.toString() ).orElse( "??" ) + "% complete";
+            String s = elm.completed().map( v -> v.toString() ).orElse( "?" ) + "% complete";
             if (elm.isCanceled() && elm.state() == State.RUNNING) {
                 s += "(Cancel requested)";
             }

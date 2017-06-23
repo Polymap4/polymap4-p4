@@ -82,13 +82,13 @@ class BackgroundJob {
         }
     }
     
-    /**
-     * Testing
-     */
-    static {
-        jobs.add( new BackgroundJob( ModuleInfo.of( ATestModule.class ), null )
-                .start( new JobChangeAdapter() ) );
-    }
+//    /**
+//     * Testing
+//     */
+//    static {
+//        jobs.add( new BackgroundJob( ModuleInfo.of( ATestModule.class ), null )
+//                .start( new JobChangeAdapter() ) );
+//    }
     
     /**
      * Immutable list of currently running {@link BackgroundJob} instances.
