@@ -151,6 +151,9 @@ public class ProcessProgressMonitor
             return (BackgroundJob)super.getSource();
         }
 
+        /** 
+         * See {@link ProcessProgressMonitor#completed()}. 
+         */
         public Optional<Integer> completed() {
             return ProcessProgressMonitor.this.completed();
         }

@@ -15,6 +15,7 @@
 package org.polymap.p4.process;
 
 import java.util.Collections;
+import java.util.EventObject;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 
 import org.polymap.core.data.process.ModuleInfo;
 import org.polymap.core.project.ILayer;
+import org.polymap.core.runtime.event.EventManager;
 
 import org.polymap.p4.project.ProjectRepository;
 
@@ -49,7 +51,7 @@ class BackgroundJob {
     private static Set<BackgroundJob>   jobs = ConcurrentHashMap.newKeySet();
     
     /**
-     * 
+     * The state of a {@link BackgroundJob}. 
      */
     public static enum State {
         /** Job has never been started. */
@@ -57,11 +59,31 @@ class BackgroundJob {
         /** Job is currently running. */
         RUNNING,
         /** Job has completed a run (successfully or not), or was canceled and stopped. */
-        ENDED
+        ENDED,
+        DISPOSED
     }
 
     /**
-     * Test
+     * 
+     */
+    public static class StateEvent
+            extends EventObject {
+
+        public State        newState;
+        
+        public StateEvent( BackgroundJob source, State newState ) {
+            super( source );
+            this.newState = newState;
+        }
+
+        @Override
+        public BackgroundJob getSource() {
+            return (BackgroundJob)super.getSource();
+        }
+    }
+    
+    /**
+     * Testing
      */
     static {
         jobs.add( new BackgroundJob( ModuleInfo.of( ATestModule.class ), null )
@@ -87,7 +109,7 @@ class BackgroundJob {
     
     private ProcessProgressMonitor  monitor;
     
-    private volatile State          state = State.NOT_YET_STARTED;
+    private volatile State          state; // = State.NOT_YET_STARTED;
     
     
     public BackgroundJob( ModuleInfo moduleInfo, ILayer layer ) {
@@ -96,6 +118,7 @@ class BackgroundJob {
         this.moduleInfo = moduleInfo;
         this.module = moduleInfo.createInstance();
         this.monitor = new ProcessProgressMonitor( this );
+        updateState( State.NOT_YET_STARTED );
     }
 
     public ModuleInfo moduleInfo() {
@@ -119,18 +142,21 @@ class BackgroundJob {
         return state;
     }
     
+    protected void updateState( State newState ) {
+        if (this.state != State.DISPOSED) {
+            this.state = newState;
+            EventManager.instance().publish( new StateEvent( this, newState ) );
+        }
+    }
+        
     /**
-     * The result of the last completed run, or null if the job has not yet completed
-     * a run.
+     * The result of the last completed run, or {@link Optional#empty()} if the job
+     * has not yet completed a run.
      */
     public Optional<IStatus> status() {
         return job != null ? Optional.ofNullable( job.getResult() ) : Optional.empty();
     }
     
-    public boolean isCanceled() {
-        return job != null && monitor.isCanceled();
-    }
-
     /**
      * Percent of work that has been completed so far, or {@link Optional#empty()}
      * if the total amount of work is {@link IJGTProgressMonitor#UNKNOWN}.
@@ -168,11 +194,11 @@ class BackgroundJob {
         job.addJobChangeListener( new JobChangeAdapter() {
             @Override
             public void running( IJobChangeEvent ev ) {
-                state = State.RUNNING;
+                updateState( State.RUNNING );
             }
             @Override
             public void done( IJobChangeEvent ev ) {
-                state = State.ENDED;
+                updateState( State.ENDED );
             }
         });
         jobs.add( this );
@@ -193,7 +219,10 @@ class BackgroundJob {
         return this;
     }
     
-    
+    public boolean isCanceled() {
+        return job != null && monitor.isCanceled();
+    }
+
     /**
      * Removes this job from the global list of running jobs. 
      */
@@ -202,6 +231,7 @@ class BackgroundJob {
         if (state == State.RUNNING) {
             cancel();
         }
+        updateState( State.DISPOSED );
     }
-    
+
 }

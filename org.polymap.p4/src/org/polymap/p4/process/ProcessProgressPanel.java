@@ -134,17 +134,20 @@ public class ProcessProgressPanel
 
     
     @EventHandler( scope=org.polymap.core.runtime.event.Event.Scope.JVM, display=true, delay=500 )
-    protected void onProgressEvent( List<ProgressEvent> evs ) {
+    protected void onProgress( List<ProgressEvent> evs ) {
         for (ProgressEvent ev : evs) {
             if (listInput.contains( ev.getSource() )) {
                 // simple update if this job is in the list already
                 list.update( ev.getSource(), null );
             }
-            else {
-                // refresh entire list if this job was not seen before
-                list.setInput( listInput = new HashSet( BackgroundJob.running() ) );
-            }
         }
+    }
+    
+    
+    @EventHandler( scope=org.polymap.core.runtime.event.Event.Scope.JVM, display=true )
+    protected void onStateChange( BackgroundJob.StateEvent ev ) {
+        // refresh entire list if this job was not seen before
+        list.setInput( listInput = new HashSet( BackgroundJob.running() ) );
     }
     
     
