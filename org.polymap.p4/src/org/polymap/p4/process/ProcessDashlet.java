@@ -14,8 +14,6 @@
  */
 package org.polymap.p4.process;
 
-import org.jgrasstools.gears.libs.modules.JGTModel;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -147,9 +145,9 @@ public class ProcessDashlet
             @Override
             public boolean select( Viewer viewer, Object parent, Object elm ) {
                 ModuleInfo info = (ModuleInfo)elm;
-                return info.name.get().map( v -> v.startsWith( pattern ) ).orElse( false )
-                        || info.label.get().map( v -> v.startsWith( pattern ) ).orElse( false )
-                        || info.description.get().map( v -> v.contains( pattern ) ).orElse( false );
+                return info.name().startsWith( pattern )
+                        || info.label().startsWith( pattern )
+                        || info.description().map( v -> v.contains( pattern ) ).orElse( false );
             }
         };
         list.setFilters( new ViewerFilter[] {filter} );
@@ -162,12 +160,12 @@ public class ProcessDashlet
         // first line
         list.firstLineLabelProvider.set( FunctionalLabelProvider.of( cell -> {
             ModuleInfo info = (ModuleInfo)cell.getElement();
-            cell.setText( info.title() );            
+            cell.setText( info.label() );            
         }));
         // second line
         list.secondLineLabelProvider.set( FunctionalLabelProvider.of( cell -> {
             ModuleInfo info = (ModuleInfo)cell.getElement();
-            cell.setText( info.description.get().orElse( "..." ) );            
+            cell.setText( info.description().orElse( "..." ) );            
         }));
         // icon
         list.iconProvider.set( FunctionalLabelProvider.of( cell -> 
@@ -191,7 +189,7 @@ public class ProcessDashlet
         list.setComparator( new ViewerComparator() {
             @Override
             public int compare( Viewer viewer, Object elm1, Object elm2 ) {
-                return ((ModuleInfo)elm1).title().compareTo( ((ModuleInfo)elm2).title() );
+                return ((ModuleInfo)elm1).label().compareTo( ((ModuleInfo)elm2).label() );
             }
         });
         list.setInput( Modules.instance().rasterExecutables() );

@@ -22,9 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.jgrasstools.gears.libs.modules.JGTModel;
-import org.jgrasstools.gears.libs.monitor.IJGTProgressMonitor;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -46,7 +43,6 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 
 import org.polymap.core.data.process.FieldInfo;
 import org.polymap.core.data.process.ModuleInfo;
-import org.polymap.core.data.process.ui.FieldIO;
 import org.polymap.core.data.process.ui.FieldViewer;
 import org.polymap.core.data.process.ui.FieldViewerSite;
 import org.polymap.core.project.ILayer;
@@ -83,12 +79,12 @@ public class ProcessModulePanel
 
     public static final PanelIdentifier ID = PanelIdentifier.parse( "processModule" );
 
-    static {
-        FieldIO.ALL.add( LayerRasterSupplier.class );
-        FieldIO.ALL.add( LayerRasterConsumer.class );
-        FieldIO.ALL.add( 0, CoordinateSupplier.class );  // higher prio than Number
-        FieldIO.ALL.add( BoundingBoxSupplier.class );
-    }
+//    static {
+//        FieldIO.ALL.add( LayerRasterSupplier.class );
+//        FieldIO.ALL.add( LayerRasterConsumer.class );
+//        FieldIO.ALL.add( 0, CoordinateSupplier.class );  // higher prio than Number
+//        FieldIO.ALL.add( BoundingBoxSupplier.class );
+//    }
 
     // instance *******************************************
     
@@ -100,7 +96,7 @@ public class ProcessModulePanel
     /** {@link BackgroundJob#moduleInfo()} of {@link #bgjob} */
     private ModuleInfo              moduleInfo;
 
-    private JGTModel                module;
+    private Object                  module;
 
     private ILayer                  layer;
 
@@ -148,7 +144,7 @@ public class ProcessModulePanel
     @Override
     public void createContents( @SuppressWarnings( "hiding" ) Composite parent ) {
         this.parent = parent;
-        site().title.set( bgjob.get().moduleInfo().title() );
+        site().title.set( bgjob.get().moduleInfo().label() );
         
         parent.setLayout( FormLayoutFactory.defaults().spacing( 8 ).margins( 2, 8 ).create() );
         
@@ -218,17 +214,16 @@ public class ProcessModulePanel
         IPanelSection section = tk().createPanelSection( parent, "Input", SWT.BORDER );
         section.getBody().setLayout( ColumnLayoutFactory.defaults().columns( 1, 1 ).margins( 0, 8 ).spacing( 10 ).create() );
 
-        Label label = tk().createLabel( section.getBody(), moduleInfo.description.get().orElse( "No description." ), SWT.WRAP );
+        Label label = tk().createLabel( section.getBody(), moduleInfo.description().orElse( "No description." ), SWT.WRAP );
         label.setLayoutData( ColumnDataFactory.defaults().widthHint( 300 ).create() );
         label.setEnabled( false );
         
         AtomicBoolean isFirst = new AtomicBoolean( true );
         for (FieldInfo fieldInfo : moduleInfo.inputFields()) {
-            // skip
-            if (IJGTProgressMonitor.class.isAssignableFrom( fieldInfo.type.get() )
-                    || !fieldInfo.description.get().isPresent()) {
-                continue;
-            }
+//            // XXX skip?
+//            if (!fieldInfo.description().isPresent()) {
+//                continue;
+//            }
             // separator
             if (!isFirst.getAndSet( false )) {
                 Label sep = new Label( section.getBody(), SWT.SEPARATOR|SWT.HORIZONTAL );
@@ -362,7 +357,7 @@ public class ProcessModulePanel
 
         AtomicBoolean isFirst = new AtomicBoolean( true );
         for (FieldInfo fieldInfo : moduleInfo.outputFields()) {
-            if (fieldInfo.description.get().isPresent()) {
+            if (fieldInfo.description().isPresent()) {
                 // separator
                 if (!isFirst.getAndSet( false )) {
                     Label sep = new Label( outputSection.getBody(), SWT.SEPARATOR|SWT.HORIZONTAL );

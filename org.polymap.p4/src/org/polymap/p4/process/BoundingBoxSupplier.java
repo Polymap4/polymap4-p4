@@ -69,7 +69,7 @@ public class BoundingBoxSupplier
     @Override
     public boolean init( @SuppressWarnings( "hiding" ) FieldViewerSite site ) {
         return super.init( site ) &&
-                ReferencedEnvelope.class.isAssignableFrom( site.fieldInfo.get().type.get() );
+                ReferencedEnvelope.class.isAssignableFrom( site.fieldInfo.get().type() );
     }
 
 

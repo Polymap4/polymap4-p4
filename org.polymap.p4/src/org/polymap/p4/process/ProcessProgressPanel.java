@@ -97,7 +97,7 @@ public class ProcessProgressPanel
         list = tk().createListViewer( parent, SWT.SINGLE, SWT.FULL_SELECTION );
         list.firstLineLabelProvider.set( FunctionalLabelProvider.of( cell -> {
             BackgroundJob elm = (BackgroundJob)cell.getElement();
-            cell.setText( elm.moduleInfo().title() );            
+            cell.setText( elm.moduleInfo().label() );            
         }));
         list.secondLineLabelProvider.set( new DescriptionLabelProvider() );
         list.iconProvider.set( FunctionalLabelProvider.of( cell -> 

@@ -17,14 +17,13 @@ package org.polymap.p4.process;
 import java.util.EventObject;
 import java.util.Optional;
 
-import org.jgrasstools.gears.libs.monitor.DummyProgressMonitor;
-import org.jgrasstools.gears.libs.monitor.IJGTProgressMonitor;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+
+import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.event.EventManager;
@@ -35,8 +34,7 @@ import org.polymap.core.runtime.event.EventManager;
  * @author Falko Bräutigam
  */
 public class ProcessProgressMonitor
-        extends DummyProgressMonitor
-        implements IJGTProgressMonitor {
+        implements IProgressMonitor {
 
     private static final Log log = LogFactory.getLog( ProcessProgressMonitor.class );
     
@@ -135,6 +133,13 @@ public class ProcessProgressMonitor
     }
 
     
+    @Override
+    public void internalWorked( double work ) {
+        // XXX Auto-generated method stub
+        throw new RuntimeException( "not yet implemented." );
+    }
+
+
     /**
      * Fired when {@link ProcessProgressMonitor} changes its progression state. Event
      * rate is throttled by {@link ProcessProgressMonitor} to about 1/s.

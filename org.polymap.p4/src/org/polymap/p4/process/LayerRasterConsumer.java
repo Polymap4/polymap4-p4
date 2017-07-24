@@ -21,8 +21,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.io.File;
 
 import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.coverage.grid.io.GridCoverage2DReader;
-import org.jgrasstools.gears.io.rasterwriter.OmsRasterWriter;
+import org.geotools.coverage.grid.io.imageio.GeoToolsWriteParams;
+import org.geotools.gce.geotiff.GeoTiffFormat;
+import org.geotools.gce.geotiff.GeoTiffWriteParams;
+import org.geotools.gce.geotiff.GeoTiffWriter;
+import org.opengis.parameter.GeneralParameterValue;
+import org.opengis.parameter.ParameterValueGroup;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.logging.Log;
@@ -88,7 +94,7 @@ public class LayerRasterConsumer
     
     @Override
     public boolean init( @SuppressWarnings( "hiding" ) FieldViewerSite site ) {
-        return super.init( site ) && site.fieldInfo.get().type.get().isAssignableFrom( GridCoverage2D.class );
+        return super.init( site ) && site.fieldInfo.get().type().isAssignableFrom( GridCoverage2D.class );
     }
 
     
@@ -126,7 +132,8 @@ public class LayerRasterConsumer
                 log.warn( "", e );
             } 
         });
-        text.setText( site.layer.get().label.get() + "-" + site.moduleInfo.get().title() ); // simpleClassname.get() );
+        ILayer layer = (ILayer)site.layer.get(); 
+        text.setText( layer.label.get() + "-" + site.moduleInfo.get().label() ); // simpleClassname.get() );
         text.forceFocus();
         
         FormDataFactory.on( text ).fill().right( 100, -80 );
@@ -153,11 +160,7 @@ public class LayerRasterConsumer
         targetDir.mkdirs();
         log.info( "Raster file: " + rasterFile.getAbsolutePath() );
         
-        OmsRasterWriter writer = new OmsRasterWriter();
-        //writer.pm = new ProcessProgressMonitor( )
-        writer.inRaster = resultRaster;
-        writer.file = rasterFile.getAbsolutePath();  
-        writer.process();
+        writeGeotiff( resultRaster, new File( rasterFile.getAbsolutePath() ) );  
         submon.done();
         
         submon = new SubMonitor( monitor, 1 );
@@ -169,6 +172,18 @@ public class LayerRasterConsumer
         submon.done();
     }
     
+    
+    protected void writeGeotiff( GridCoverage2D raster, File toFile ) throws Exception {
+        final GeoTiffFormat format = new GeoTiffFormat();
+        final GeoTiffWriteParams wp = new GeoTiffWriteParams();
+        wp.setCompressionMode( GeoTiffWriteParams.MODE_DEFAULT );
+        wp.setTilingMode( GeoToolsWriteParams.MODE_DEFAULT );
+        final ParameterValueGroup paramWrite = format.getWriteParameters();
+        paramWrite.parameter( AbstractGridFormat.GEOTOOLS_WRITE_PARAMS.getName().toString() ).setValue( wp );
+        GeoTiffWriter gtw = (GeoTiffWriter)format.getWriter( toFile );
+        gtw.write( raster, (GeneralParameterValue[])paramWrite.values().toArray( new GeneralParameterValue[1] ) );
+    }
+
     
     protected IServiceInfo createCatalogEntry( File rasterFile, IProgressMonitor monitor ) throws Exception {
         monitor.beginTask( "new catalog entry", 1 );

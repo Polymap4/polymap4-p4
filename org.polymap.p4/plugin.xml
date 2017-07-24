@@ -160,5 +160,23 @@
             class="org.polymap.p4.catalog.LocalCatalogProvider">
       </catalogProvider>
    </extension>
+   <extension
+         point="org.polymap.core.data.process.fieldIO">
+      <fieldIO
+            class="org.polymap.p4.process.LayerRasterSupplier">
+      </fieldIO>
+      <fieldIO
+            class="org.polymap.p4.process.NumberSupplier">
+      </fieldIO>
+      <fieldIO
+            class="org.polymap.p4.process.NumberConsumer">
+      </fieldIO>
+      <fieldIO
+            class="org.polymap.p4.process.BoundingBoxSupplier">
+      </fieldIO>
+      <fieldIO
+            class="org.polymap.p4.process.LayerRasterConsumer">
+      </fieldIO>
+   </extension>
 
 </plugin>

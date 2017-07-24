@@ -20,9 +20,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.jgrasstools.gears.libs.modules.JGTModel;
-import org.jgrasstools.gears.libs.monitor.IJGTProgressMonitor;
-
 import com.google.common.base.Throwables;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -82,14 +79,6 @@ class BackgroundJob {
         }
     }
     
-//    /**
-//     * Testing
-//     */
-//    static {
-//        jobs.add( new BackgroundJob( ModuleInfo.of( ATestModule.class ), null )
-//                .start( new JobChangeAdapter() ) );
-//    }
-    
     /**
      * Immutable list of currently running {@link BackgroundJob} instances.
      */
@@ -103,7 +92,7 @@ class BackgroundJob {
     
     private ModuleInfo              moduleInfo;
 
-    private JGTModel                module;
+    private Object                  module;
     
     private Job                     job;
     
@@ -116,7 +105,7 @@ class BackgroundJob {
         assert moduleInfo != null;
         this.layerId = layer != null ? layer.id() : null;
         this.moduleInfo = moduleInfo;
-        this.module = moduleInfo.createInstance();
+        this.module = moduleInfo.createModuleInstance();
         this.monitor = new ProcessProgressMonitor( this );
         updateState( State.NOT_YET_STARTED );
     }
@@ -125,7 +114,7 @@ class BackgroundJob {
         return moduleInfo;
     }
 
-    public JGTModel module() {
+    public Object module() {
         return module;
     }
     
@@ -175,8 +164,7 @@ class BackgroundJob {
             @Override
             protected IStatus run( IProgressMonitor _monitor ) {
                 try {
-                    module.pm = monitor;
-                    moduleInfo.execute( module, null );
+                    moduleInfo.execute( module, monitor );
                     return Status.OK_STATUS;
                 }
                 catch (Exception e) {

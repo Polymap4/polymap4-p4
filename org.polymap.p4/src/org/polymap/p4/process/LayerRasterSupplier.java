@@ -20,9 +20,6 @@ import java.util.stream.Collectors;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.io.GridCoverage2DReader;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -56,8 +53,6 @@ import org.polymap.p4.project.ProjectRepository;
 public class LayerRasterSupplier
         extends InputFieldSupplier {
 
-    private static final Log log = LogFactory.getLog( LayerRasterSupplier.class );
-    
     private ComboViewer         combo;
 
     private List<ILayer>        layers;
@@ -72,8 +67,8 @@ public class LayerRasterSupplier
     @Override
     public boolean init( @SuppressWarnings( "hiding" ) FieldViewerSite site ) {
         return super.init( site ) && (
-                site.fieldInfo.get().type.get().isAssignableFrom( GridCoverage2D.class ) ||
-                site.fieldInfo.get().type.get().isAssignableFrom( GridCoverage2DReader.class ) );
+                site.fieldInfo.get().type().isAssignableFrom( GridCoverage2D.class ) ||
+                site.fieldInfo.get().type().isAssignableFrom( GridCoverage2DReader.class ) );
     }
 
     
@@ -121,7 +116,7 @@ public class LayerRasterSupplier
         combo.addSelectionChangedListener( ev -> {
             supply();
         });
-        ILayer layer = site.layer.orElse( layers.get( 0 ) );
+        ILayer layer = (ILayer)site.layer.orElse( layers.get( 0 ) );
         combo.setSelection( new StructuredSelection( layer ) );
         //combo.getCombo().forceFocus();
     }
@@ -134,7 +129,7 @@ public class LayerRasterSupplier
             // block UIThread until field is set
             RasterLayer rl = RasterLayer.of( layer ).get().get();
 
-            Class<?> fieldType = site.fieldInfo.get().type.get();
+            Class<?> fieldType = site.fieldInfo.get().type();
             if (fieldType.isAssignableFrom( GridCoverage2D.class )) {
                 site.setFieldValue( rl.gridCoverage() );                
             }
