@@ -64,6 +64,7 @@ import org.polymap.rhei.batik.toolkit.md.TreeExpandStateDecorator;
 
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
+import org.polymap.p4.layer.LayersCatalogsPanel;
 import org.polymap.p4.layer.NewLayerContribution;
 import org.polymap.p4.map.ProjectMapPanel;
 
@@ -103,7 +104,7 @@ public class CatalogPanel
     @Override
     public boolean wantsToBeShown() {
         return parentPanel()
-                .filter( parent -> parent instanceof ProjectMapPanel )
+                .filter( parent -> parent instanceof ProjectMapPanel || parent instanceof LayersCatalogsPanel )
                 .map( parent -> {
                     site().title.set( "" );
                     site().tooltip.set( "Catalogs of data sources" );

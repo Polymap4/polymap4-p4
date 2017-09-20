@@ -78,6 +78,7 @@
       <plugin id="org.polymap.core.mapeditor"/>
       <plugin id="org.polymap.core.project"/>
       <plugin id="org.polymap.core.recordstore"/>
+      <plugin id="org.polymap.core.style"/>
       <plugin id="org.polymap.model2"/>
       <plugin id="org.polymap.model2.store.recordstore"/>
       <plugin id="org.polymap.p4"/>
