@@ -62,7 +62,7 @@ public class MetadataIconProvider
             cell.setImage( P4Plugin.images().svgImage( "human-greeting.svg", config12 ) );
         }
         else if (elm instanceof IResourceInfo) {
-            cell.setImage( P4Plugin.images().svgImage( "chevron-right.svg", config12 ) );
+            cell.setImage( P4Plugin.images().svgImage( "layers.svg", config12 ) );
 //            if (elm instanceof RServiceInfo.RResourceInfo) {
 //                cell.setImage( P4Plugin.images().svgImage( "human-greeting.svg", SvgImageRegistryHelper.NORMAL12 ) );
 //            }

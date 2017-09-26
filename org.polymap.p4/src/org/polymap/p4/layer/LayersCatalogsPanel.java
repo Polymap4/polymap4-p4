@@ -182,8 +182,8 @@ public class LayersCatalogsPanel
         FormDataFactory.on( catalogsViewer.getTree() ).fill().top( sectionTitle );
         catalogsViewer.linesVisible.set( true );
         catalogsViewer.setContentProvider( new MetadataContentProvider( P4Plugin.allResolver() ) );
-        catalogsViewer.firstLineLabelProvider.set( new TreeExpandStateDecorator(
-                catalogsViewer, new MetadataLabelProvider() ) );
+        catalogsViewer.firstLineLabelProvider.set( new TreeExpandStateDecorator( catalogsViewer, 
+                new MetadataLabelProvider() ) );
         catalogsViewer.iconProvider.set( new MetadataIconProvider() );
        // catalogsViewer.firstSecondaryActionProvider.set( new CreateLayerAction() );
         catalogsViewer.setInput( P4Plugin.catalogs() );
