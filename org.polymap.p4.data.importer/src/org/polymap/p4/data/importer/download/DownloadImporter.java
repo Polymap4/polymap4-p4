@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
@@ -26,6 +27,7 @@ import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -42,9 +44,11 @@ import org.polymap.core.runtime.Timer;
 import org.polymap.core.runtime.UIJob;
 import org.polymap.core.runtime.i18n.IMessages;
 import org.polymap.core.ui.FormLayoutFactory;
+
 import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
 import org.polymap.rhei.batik.toolkit.IPanelToolkit;
 
+import org.polymap.p4.P4HelpPanel;
 import org.polymap.p4.data.importer.ContextOut;
 import org.polymap.p4.data.importer.ImportTempDir;
 import org.polymap.p4.data.importer.Importer;
@@ -68,6 +72,8 @@ public class DownloadImporter
     private static final IMessages i18n = Messages.forPrefix( "Download" );
 
     public static final Pattern    URL_PATTERN = Pattern.compile( "(((ftp)|(https?)):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)" );
+    
+    public static final long       MAX_DOWNLOAD_SIZE = 500 * 1024 * 1024;
 
     @ContextOut
     protected File                 downloaded;
@@ -133,7 +139,7 @@ public class DownloadImporter
                                     catch (MalformedURLException e) {
                                     }
                                 }
-                                msg.setText( "Not a valid URL" );
+                                msg.setText( "Not a valid download URL" );
                             }
                         });
                     }
@@ -151,36 +157,51 @@ public class DownloadImporter
     @Override
     public void verify( IProgressMonitor monitor ) {
         exception = null;
+        downloaded = null;
         
         if (url != null) {
             monitor.beginTask( "Downloading", IProgressMonitor.UNKNOWN );
             File tempDir = ImportTempDir.create();
-            downloaded = new File( tempDir, FilenameUtils.getName( url.getPath() ) );
-            try (
-                OutputStream out = new FileOutputStream( downloaded );
-                InputStream in = url.openStream();
-            ){
-                Timer timer = new Timer();
-                byte[] buf = new byte[4096];
-                long count = 0;
-                for (int c=in.read( buf ); c>-1; c=in.read( buf )) {
-                    out.write( buf, 0, c );
-                    count += c;
-
-                    if (monitor.isCanceled()) {
-                        break;
-                    }
-                    else {
-                        monitor.subTask( FileUtils.byteCountToDisplaySize( count ) );
-                        timer.start();
-                    }
-                }
-                site.ok.set( true );
-            }
-            catch (Exception e) {
+            String filename = FilenameUtils.getName( url.getPath() );
+            if (StringUtils.isBlank( filename )) {
                 site.ok.set( false );
-                exception = e;
-                return;
+                exception = new IOException( "The URL does not contain a file to download." );
+            }
+            else {
+                File file = new File( tempDir, filename );
+                try (
+                    OutputStream out = new FileOutputStream( file );
+                    InputStream in = url.openStream();
+                ){
+                    Timer timer = new Timer();
+                    byte[] buf = new byte[4096];
+                    long count = 0;
+                    for (int c=in.read( buf ); c>-1; c=in.read( buf )) {
+                        out.write( buf, 0, c );
+                        count += c;
+
+                        if (count >= MAX_DOWNLOAD_SIZE) {
+                            throw new IOException( "Current maximum download size is: " + FileUtils.byteCountToDisplaySize( count ) + "."
+                                    + "\n\nPlease [contact support](@open/" + P4HelpPanel.ID + ") to raise your limit." );
+                        }
+
+                        if (monitor.isCanceled()) {
+                            break;
+                        }
+                        else {
+                            monitor.subTask( FileUtils.byteCountToDisplaySize( count ) );
+                            timer.start();
+                        }
+                    }
+                    downloaded = file;
+                    site.ok.set( true );
+                }
+                catch (Exception e) {
+                    log.warn( "", e );
+                    site.ok.set( false );
+                    exception = e;
+                    return;
+                }
             }
         }
         else {
@@ -196,11 +217,9 @@ public class DownloadImporter
                     + "> " + downloaded.getName() + "\n\n"
                     + "> " + FileUtils.byteCountToDisplaySize( downloaded.length() ) );            
         }
-        else {
-            tk.createFlowText( parent, "Unable to download file." );
-            if (exception != null) {
-                tk.createFlowText( parent, "Reason: " + exception.getMessage() );                
-            }
+        if (exception != null) {
+            tk.createFlowText( parent, "Unable to download file." +
+                    (exception != null ? "\n\n**Reason:** " + exception.getMessage() : "") );                
         }
     }
 
