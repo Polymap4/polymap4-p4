@@ -83,8 +83,6 @@ import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.data.importer.ImportsLabelProvider.Type;
 import org.polymap.p4.data.importer.features.ImportFeaturesOperation;
-import org.polymap.p4.layer.LayersCatalogsPanel;
-import org.polymap.p4.layer.LayersPanel;
 import org.polymap.p4.map.ProjectMapPanel;
 import org.polymap.rap.updownload.upload.IUploadHandler;
 import org.polymap.rap.updownload.upload.Upload;
@@ -126,9 +124,10 @@ public class ImportPanel
     @Override
     public boolean wantsToBeShown() {
         return parentPanel()
-                .filter( parent -> parent instanceof LayersPanel
-                        || parent instanceof LayersCatalogsPanel
-                        || parent instanceof ProjectMapPanel )
+                .filter( parent -> parent instanceof ProjectMapPanel
+                        //|| parent instanceof LayersCatalogsPanel
+                        //|| parent instanceof LayersPanel )
+                        )
                 .map( parent -> {
                     site().title.set( "" );
                     site().tooltip.set( i18n.get( "tooltip" ) );

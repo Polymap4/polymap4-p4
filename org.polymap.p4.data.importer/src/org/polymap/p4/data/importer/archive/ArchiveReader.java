@@ -15,6 +15,7 @@
 package org.polymap.p4.data.importer.archive;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -32,9 +33,9 @@ import java.nio.file.Files;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -43,20 +44,26 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.polymap.core.runtime.config.Config2;
 import org.polymap.core.runtime.config.Configurable;
 import org.polymap.core.runtime.config.DefaultBoolean;
+import org.polymap.core.runtime.config.DefaultInt;
 import org.polymap.core.runtime.config.Mandatory;
 
 import org.polymap.p4.P4Plugin;
 
 /**
- * Copy files into a (temporarey) directory. Handles *.zip, *.tar, *.gz. Flattens the
- * file hierarchy.
+ * Copy files into a (temporary) directory. Handles archives down to
+ * {@link #maxArchiveLevel}.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class ArchiveReader
         extends Configurable {
 
-    private static Log log = LogFactory.getLog( ArchiveReader.class );
+    private static final Log log = LogFactory.getLog( ArchiveReader.class );
+    
+    public static final List<String>        EXTS = Arrays.asList( "zip", "jar", "kmz", 
+            "tar",
+            "gz", "gzip", "tgz",
+            "bz2", "bzip2", "tbz" );
     
     /** Defaults to a automatically created temp dir. */
     @Mandatory
@@ -65,6 +72,10 @@ public class ArchiveReader
     @Mandatory
     @DefaultBoolean( false )
     public Config2<ArchiveReader,Boolean>   overwrite;
+    
+    @Mandatory
+    @DefaultInt( 1 )
+    public Config2<ArchiveReader,Integer>   maxArchiveLevel;
     
     /** Charset for ZIP. Defaults to UTF8. */
     @Mandatory
@@ -88,10 +99,9 @@ public class ArchiveReader
 
     public boolean canHandle( File f, @SuppressWarnings("hiding") IProgressMonitor monitor ) {
         String ext = FilenameUtils.getExtension( f.getName() ).toLowerCase();
-        return ext.equals( "zip" ) || ext.equals( "jar" ) || ext.equals( "kmz" )
-                || ext.equals( "tar" ) || ext.equals( "gz" );
+        return EXTS.contains( ext );
         
-        // XXX check content / magic number if extension failed
+        // XXX check content type / magic number if extension failed
     }
     
     
@@ -106,7 +116,7 @@ public class ArchiveReader
         try (
             InputStream in = new BufferedInputStream( new FileInputStream( f ) ); 
         ){
-            handle( targetDir.get(), f.getName(), null, in );
+            handle( targetDir.get(), f.getName(), null, in, 0 );
             return results;
         }
         finally {
@@ -115,24 +125,35 @@ public class ArchiveReader
     }
 
 
-    protected void handle( File dir, String name, String contentType, InputStream in ) throws Exception {
+    protected void handle( File dir, String name, String contentType, InputStream in, int archiveLevel ) throws Exception {
         if (monitor.isCanceled()) {
             return;
         }
         monitor.subTask( name );
+        
         contentType = contentType == null ? "" : contentType;
-        if (name.toLowerCase().endsWith( ".zip" ) 
-                || name.toLowerCase().endsWith( ".jar" ) 
-                || name.toLowerCase().endsWith( ".kmz" ) 
+        String lcname = name.toLowerCase();
+        
+        // stop flattening if maxArchiveLevel is reached
+        if (archiveLevel >= maxArchiveLevel.get()) {
+            handleFile( dir, name, in );            
+        }
+        else if (lcname.endsWith( ".zip" ) 
+                || lcname.endsWith( ".jar" ) 
+                || lcname.endsWith( ".kmz" ) 
                 || contentType.equalsIgnoreCase( "application/zip" )) {
-            handleZip( dir, name, in );
+            handleZip( dir, name, in, archiveLevel );
         }
-        else if (name.toLowerCase().endsWith( ".tar" ) || contentType.equalsIgnoreCase( "application/tar" )) {
-            handleTar( dir, name, in );
+        else if (lcname.endsWith( ".tar" ) || contentType.equalsIgnoreCase( "application/tar" )) {
+            handleTar( dir, name, in, archiveLevel );
         }
-        else if (name.toLowerCase().endsWith( "gz" ) || name.toLowerCase().endsWith( "gzip" ) 
+        else if (lcname.endsWith( ".gz" ) || lcname.endsWith( ".gzip" ) || lcname.endsWith( ".tgz" ) 
                 || contentType.equalsIgnoreCase( "application/gzip" )) {
-            handleGzip( dir, name, in );
+            handleGzip( dir, name, in, archiveLevel );
+        }
+        else if (lcname.endsWith( ".bz2" ) || lcname.endsWith( ".bzip2" ) || lcname.endsWith( ".tbz" ) 
+                || contentType.equalsIgnoreCase( "application/bzip2" )) {
+            handleBzip2( dir, name, in, archiveLevel );
         }
         else {
             handleFile( dir, name, in );
@@ -141,7 +162,7 @@ public class ArchiveReader
     }
     
     
-    protected void handleGzip( File dir, String name, InputStream in ) throws Exception {
+    protected void handleGzip( File dir, String name, InputStream in, int archiveLevel ) throws Exception {
         log.info( "    GZIP: " + name );
         try (GZIPInputStream gzip = new GZIPInputStream( in )) {
             String nextName = null;
@@ -154,7 +175,27 @@ public class ArchiveReader
             else {
                 nextName = name.substring( 0, name.length() - 2 );            
             }
-            handle( dir, nextName, null, gzip );
+            handle( dir, nextName, null, gzip, archiveLevel );
+        }
+    }
+
+
+    protected void handleBzip2( File dir, String name, InputStream in, int archiveLevel ) throws Exception {
+        log.info( "    BZIP2: " + name );
+        try (
+            BZip2CompressorInputStream bzip2 = new BZip2CompressorInputStream( in, true );
+        ){
+            String nextName = null;
+            if (name.toLowerCase().endsWith( ".bz2" )) {
+                nextName = name.substring( 0, name.length() - 4 );
+            }
+            else if (name.toLowerCase().endsWith( ".tbz" )) {
+                nextName = name.substring( 0, name.length() - 3 ) + "tar";
+            }
+            else {
+                nextName = name.substring( 0, name.length() - 3 );            
+            }
+            handle( dir, nextName, null, bzip2, archiveLevel );
         }
     }
 
@@ -164,7 +205,7 @@ public class ArchiveReader
         File target = new File( dir, FilenameUtils.getName( name ) );
         
         if (!overwrite.get() && target.exists()) {
-            throw new RuntimeException( "File already exists: " + target );
+            throw new RuntimeException( "Unable to flatten contents of archive. File already exists: " + target );
         }
         try (
             OutputStream out = new FileOutputStream( target );
@@ -175,25 +216,18 @@ public class ArchiveReader
     }
     
     
-    protected void handleZip( File dir, String name, InputStream in ) throws Exception {
+    protected void handleZip( File dir, String name, InputStream in, int archiveLevel ) throws Exception {
         log.info( "    ZIP: " + name );
         try {
             ZipInputStream zip = new ZipInputStream( in, charset.get() );
             ZipEntry entry = null;
-            File subdir = dir;
             while ((entry = zip.getNextEntry()) != null) {
-                if (entry.isDirectory()) {
-                    subdir = new File( subdir, entry.getName() );
-                    subdir.mkdirs();
-                }
-                else {
+                if (!entry.isDirectory()) {
                     String path = FilenameUtils.getPath( entry.getName() );
-                    File filedir = subdir;
-                    if (!StringUtils.isBlank( path )) {
-                        filedir = new File( subdir, path );
-                        filedir.mkdirs();                        
-                    }
-                    handle( filedir, FilenameUtils.getName( entry.getName() ), null, zip );
+                    File subdir = new File( dir, path );  // XXX check separator?
+                    subdir.mkdirs();
+
+                    handle( subdir, FilenameUtils.getName( entry.getName() ), null, zip, archiveLevel+1 );
                 }
             }
         }
@@ -208,21 +242,24 @@ public class ArchiveReader
     }
 
 
-    protected void handleTar( File dir, String name, InputStream in ) throws Exception {
+    protected void handleTar( File dir, String name, InputStream in, int archiveLevel ) throws Exception {
         log.info( "    TAR: " + name );
         try (
             TarArchiveInputStream tar = new TarArchiveInputStream( in, charset.get().name() )
         ){
             ArchiveEntry entry = null;
-            File subdir = dir;
             while ((entry = tar.getNextEntry()) != null) {
-                String entryName = FilenameUtils.getName( entry.getName() );
                 if (entry.isDirectory()) {
-                    subdir = new File( subdir, entryName );
-                    subdir.mkdir();                    
+                    // skip dirs
+//                    subdir = new File( subdir, entry.getName() );
+//                    subdir.mkdir();                    
                 }
                 else {
-                    handle( subdir, entryName, null, tar );
+                    String path = FilenameUtils.getPath( entry.getName() );
+                    File subdir = new File( dir, path );  // XXX check separator?
+                    subdir.mkdirs();
+                    
+                    handle( subdir, FilenameUtils.getName( entry.getName() ), null, tar, archiveLevel+1 );
                 }
             }
         }

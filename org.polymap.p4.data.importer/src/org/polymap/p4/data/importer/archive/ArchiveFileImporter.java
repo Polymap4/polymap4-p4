@@ -88,7 +88,7 @@ public class ArchiveFileImporter
 
         site.icon.set( ImporterPlugin.images().svgImage( "file-multiple.svg", NORMAL24 ) );
         site.summary.set( "Archive: " + file.getName() );
-        site.description.set( "A archive file contains other files. Click to import files from within the archive." );
+        site.description.set( "Archive file containing other files." );
         site.terminal.set( false );
     }
 
@@ -159,8 +159,9 @@ public class ArchiveFileImporter
         else {
             org.eclipse.swt.widgets.List list = tk.createList( parent, SWT.V_SCROLL, SWT.H_SCROLL, SWT.MULTI );
             
-            int tempDirLength = tempDir.getAbsolutePath().length() + 1;
-            allFiles.stream().sorted().forEach( f -> list.add( f.getAbsolutePath().substring( tempDirLength ) ) );
+            allFiles.stream()/*.sorted()*/.forEach( f -> {
+                list.add( f.getName() );   
+            });
             
             selectedFiles = new ArrayList<File>( allFiles );
             
