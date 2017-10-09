@@ -62,6 +62,7 @@ import org.polymap.rhei.batik.Scope;
 import org.polymap.rhei.batik.contribution.ContributionManager;
 import org.polymap.rhei.batik.toolkit.ActionItem;
 import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
+
 import org.polymap.p4.Messages;
 import org.polymap.p4.P4AppDesign;
 import org.polymap.p4.P4Panel;
@@ -85,7 +86,7 @@ public class ProjectMapPanel
         extends P4Panel
         implements OlEventListener {
 
-    private static Log log = LogFactory.getLog( ProjectMapPanel.class );
+    private static final Log log = LogFactory.getLog( ProjectMapPanel.class );
 
     public static final PanelIdentifier ID = PanelIdentifier.parse( "start" );
     
@@ -99,6 +100,9 @@ public class ProjectMapPanel
      */
     @Scope( P4Plugin.Scope )
     protected Context<IMap>             map;
+
+    @Scope( P4Plugin.Scope )
+    protected Context<MapViewer<ILayer>> mainMapViewer;
 
     public MapViewer<ILayer>            mapViewer;
 
@@ -179,6 +183,7 @@ public class ProjectMapPanel
         // mapViewer
         try {
             mapViewer = new MapViewer( parent );
+            mainMapViewer.set( mapViewer );
             // triggers {@link MapViewer#refresh()} on {@link ProjectNodeCommittedEvent} 
             mapViewer.contentProvider.set( new ProjectContentProvider() );
             mapViewer.layerProvider.set( new ProjectLayerProvider() );

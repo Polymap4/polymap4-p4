@@ -57,7 +57,7 @@ public class ImportFeaturesOperation
 
     
     public ImportFeaturesOperation( ImporterContext context, FeatureCollection features  ) {
-        super( "Import features" );
+        super( "Storing features" );
         this.context = context;
         this.features = features;
         assert features != null : "No FeatureCollection in @ContextOut";
@@ -84,6 +84,8 @@ public class ImportFeaturesOperation
     
     @Override
     protected IStatus doExecute( IProgressMonitor monitor, IAdaptable info ) throws Exception {
+        // wait for "done" snack of import op and and monitor throttle timeout
+        Thread.sleep( 1500 );
         monitor.beginTask( getLabel(), 100 );
         
         FeatureType schema = features.getSchema();

@@ -57,7 +57,7 @@ public class AddLayerForImportedFeaturesConcern
 
     @Override
     public IUndoableOperation newInstance( IUndoableOperation op, OperationInfo info ) {
-        return op instanceof ImportFeaturesOperation 
+        return op instanceof ImportFeaturesOperation
                 ? new AddLayerOperationConcern( (ImportFeaturesOperation)op, info ) 
                 : null;
     }

@@ -322,6 +322,7 @@ public class ImporterContext
 
     public Map<Class,Object> execute( IProgressMonitor monitor ) throws Exception {
         importer.execute( monitor );
+        monitor.done();
 
         // collect contextOut
         contextOut.clear();

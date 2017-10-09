@@ -20,7 +20,6 @@ import static org.polymap.core.ui.FormDataFactory.on;
 import static org.polymap.rhei.batik.app.SvgImageRegistryHelper.WHITE24;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -300,24 +299,38 @@ public class ImportPanel
      * 
      */
     protected void executeTerminalContext( @SuppressWarnings("hiding") ImporterContext context ) throws Exception {
-        // execute
-        Map<Class,Object> contextOut = new HashMap();
-        DefaultOperation executeOp = new DefaultOperation( "" ) {
+        DefaultOperation executeOp = new DefaultOperation( "Import" ) {
             @Override
             protected IStatus doExecute( IProgressMonitor monitor, IAdaptable info ) throws Exception {
-                contextOut.putAll( context.execute( monitor ) );
+                // wait for panel to close and monitor throttle timeout
+                Thread.sleep( 1500 );
+                
+                // execute
+                monitor.beginTask( "Importing", IProgressMonitor.UNKNOWN );
+                Map<Class,Object> contextOut = context.execute( monitor );
+                monitor.done();
+                
+                FeatureCollection features = (FeatureCollection)contextOut.values().stream()
+                        .filter( v -> v instanceof FeatureCollection ).findAny().orElse( null );
+                
+                // copy features
+                if (features != null) {
+                    ImportFeaturesOperation op = new ImportFeaturesOperation( context, features );
+                    getContext().propagate( op );
+                    OperationSupport.instance().execute( op, true, false );
+                }
                 return Status.OK_STATUS;
             }
         };
-        OperationSupport.instance().execute( executeOp, false, false );
+        OperationSupport.instance().execute( executeOp, true, false );
         
-        // copy features
-        FeatureCollection features = (FeatureCollection)contextOut.get( FeatureCollection.class );
-        if (features != null) {
-            ImportFeaturesOperation op = new ImportFeaturesOperation( context, features );
-            getContext().propagate( op );
-            OperationSupport.instance().execute( op, false, false );
-        }
+//        // copy features
+//        FeatureCollection features = (FeatureCollection)contextOut.get( FeatureCollection.class );
+//        if (features != null) {
+//            ImportFeaturesOperation op = new ImportFeaturesOperation( context, features );
+//            getContext().propagate( op );
+//            OperationSupport.instance().execute( op, false, false );
+//        }
         
         // close panel
         getContext().closePanel( site().path() );
