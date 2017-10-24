@@ -25,8 +25,11 @@ import org.eclipse.jface.viewers.ViewerCell;
 import org.polymap.core.runtime.config.Config2;
 import org.polymap.core.runtime.config.ConfigurationFactory;
 import org.polymap.core.runtime.config.Mandatory;
-import org.polymap.rhei.batik.BatikPlugin;
 
+import org.polymap.rhei.batik.BatikPlugin;
+import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
+
+import org.polymap.p4.P4Plugin;
 import org.polymap.p4.data.importer.ImporterPrompt.Severity;
 
 /**
@@ -108,7 +111,7 @@ class ImportsLabelProvider
                     break;
                 }
                 case Description:   cell.setText( prompt.description.get() ); break;
-                case Icon:          cell.setImage( null /*P4Plugin.images().svgImage( "help.svg", SvgImageRegistryHelper.NORMAL12 )*/ ); break;
+                case Icon:          cell.setImage( P4Plugin.images().svgImage( "circle-small.svg", SvgImageRegistryHelper.NORMAL12 ) ); break;
                 case StatusIcon: {
                     if (prompt.ok.get()) {
                         cell.setImage( BatikPlugin.images().svgImage( "check.svg", OK24 ) );

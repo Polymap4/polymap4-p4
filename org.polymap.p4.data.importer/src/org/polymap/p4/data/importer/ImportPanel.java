@@ -256,6 +256,7 @@ public class ImportPanel
             MdToolkit tk = (MdToolkit)site().toolkit();
             if (context.site().terminal.get()) {
                 fab = tk.createFab( SWT.RIGHT );
+                fab.setText( "Import" );
                 fab.setToolTipText( i18n.get( "fabTooltip" ) );
             }
             else {
