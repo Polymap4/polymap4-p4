@@ -178,7 +178,7 @@ public class ImportPanel
         // upload button
         Upload upload = null;
         if (!nextContext.isPresent()) {
-            upload = tk.adapt( new Upload( parent, SWT.FLAT ) ); //, Upload.SHOW_PROGRESS ) );
+            upload = tk.adapt( new Upload( parent, SWT.BORDER ) ); //, Upload.SHOW_PROGRESS ) );
             upload.setBackground( parent.getBackground() );
             upload.setImage( ImporterPlugin.images().svgImage( "upload.svg", SvgImageRegistryHelper.ACTION24 ) );
             upload.setText( i18n.get( "upload" ) );

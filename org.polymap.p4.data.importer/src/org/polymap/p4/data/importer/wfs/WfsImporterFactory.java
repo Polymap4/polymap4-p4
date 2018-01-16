@@ -31,9 +31,10 @@ public class WfsImporterFactory
 
     @Override
     public void createImporters( ImporterBuilder builder ) throws Exception {
-        if (any == null) {
-            builder.newImporter( new WfsImporter() );
-        }
+        // FIXME seems to work with just a very few servers; check before re-enable
+//        if (any == null) {
+//            builder.newImporter( new WfsImporter() );
+//        }
     }
     
 }
