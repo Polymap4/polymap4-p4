@@ -32,11 +32,12 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.core.data.DataPlugin;
+import org.polymap.core.data.PipelineDataStore;
 import org.polymap.core.data.PipelineFeatureSource;
 import org.polymap.core.data.feature.FeaturesProducer;
-import org.polymap.core.data.pipeline.DataSourceDescription;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
 import org.polymap.core.data.pipeline.Pipeline;
-import org.polymap.core.data.pipeline.PipelineIncubationException;
+import org.polymap.core.data.pipeline.PipelineBuilderException;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.JobExecutor;
 import org.polymap.core.runtime.UIJob;
@@ -47,7 +48,7 @@ import org.polymap.core.runtime.session.SessionSingleton;
 
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.catalog.AllResolver;
-import org.polymap.p4.data.P4PipelineIncubator;
+import org.polymap.p4.data.P4PipelineBuilder;
 
 /**
  * Carries the {@link FeatureSource}, the {@link #filter()}ed features and the
@@ -146,18 +147,18 @@ public class FeatureLayer {
     }
 
     
-    protected FeatureLayer doConnectLayer( IProgressMonitor monitor ) throws PipelineIncubationException, Exception {
+    protected FeatureLayer doConnectLayer( IProgressMonitor monitor ) throws PipelineBuilderException, Exception {
         assert fs == null;
         log.info( "doConnectLayer(): " + layer.label.get() );
         // resolve service
-        DataSourceDescription dsd = AllResolver.instance().connectLayer( layer, monitor )
+        DataSourceDescriptor dsd = AllResolver.instance().connectLayer( layer, monitor )
                 .orElseThrow( () -> new RuntimeException( "No data source for layer: " + layer ) );
 
         // create pipeline for it
-        Pipeline pipeline = P4PipelineIncubator.forLayer( layer )
-                .newPipeline( FeaturesProducer.class, dsd, null );
+        Pipeline pipeline = P4PipelineBuilder.forLayer( layer ).newPipeline( FeaturesProducer.class, dsd, null );
+        
         if (pipeline != null && pipeline.length() > 0) {
-            fs = new PipelineFeatureSource( pipeline );
+            fs = new PipelineDataStore( pipeline ).getFeatureSource();
         }
         return this;
     }

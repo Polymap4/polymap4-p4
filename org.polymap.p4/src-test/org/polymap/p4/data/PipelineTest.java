@@ -36,7 +36,7 @@ import com.google.common.collect.Lists;
 import org.polymap.core.data.feature.FeatureRenderProcessor2;
 import org.polymap.core.data.image.EncodedImageProducer;
 import org.polymap.core.data.image.ImageProducer;
-import org.polymap.core.data.pipeline.DataSourceDescription;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
 import org.polymap.core.data.pipeline.Pipeline;
 
 @RunWith( MockitoJUnitRunner.class )
@@ -70,10 +70,9 @@ public class PipelineTest {
 
     @Test
     public void checkWMS2Image() throws Exception {
+        P4PipelineBuilder incubator = P4PipelineBuilder.forLayer( null );
 
-        P4PipelineIncubator incubator = P4PipelineIncubator.forLayer( null );
-
-        DataSourceDescription dsd = new DataSourceDescription();
+        DataSourceDescriptor dsd = new DataSourceDescriptor();
         dsd.service.set( webMapServer );
         dsd.resourceName.set( "WMS" );
 
@@ -85,10 +84,9 @@ public class PipelineTest {
 
     @Test
     public void checkWMS2EncodedImage() throws Exception {
+        P4PipelineBuilder incubator = P4PipelineBuilder.forLayer( null );
 
-        P4PipelineIncubator incubator = P4PipelineIncubator.forLayer( null );
-
-        DataSourceDescription dsd = new DataSourceDescription();
+        DataSourceDescriptor dsd = new DataSourceDescriptor();
         dsd.service.set( webMapServer );
         dsd.resourceName.set( "WMS" );
 
@@ -100,10 +98,9 @@ public class PipelineTest {
 
     @Test
     public void checkFeatures2EncodedImage() throws Exception {
+        P4PipelineBuilder incubator = P4PipelineBuilder.forLayer( null );
 
-        P4PipelineIncubator incubator = P4PipelineIncubator.forLayer( null );
-
-        DataSourceDescription dsd = new DataSourceDescription();
+        DataSourceDescriptor dsd = new DataSourceDescriptor();
         dsd.service.set( dataAccess );
         dsd.resourceName.set( "Features" );
 

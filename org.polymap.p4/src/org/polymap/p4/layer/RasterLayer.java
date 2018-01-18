@@ -29,8 +29,8 @@ import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
-import org.polymap.core.data.pipeline.DataSourceDescription;
-import org.polymap.core.data.pipeline.PipelineIncubationException;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
+import org.polymap.core.data.pipeline.PipelineBuilderException;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.JobExecutor;
 import org.polymap.core.runtime.UIJob;
@@ -122,12 +122,12 @@ public class RasterLayer {
     }
 
     
-    protected RasterLayer doConnectLayer( IProgressMonitor monitor ) throws PipelineIncubationException, Exception {
+    protected RasterLayer doConnectLayer( IProgressMonitor monitor ) throws PipelineBuilderException, Exception {
         log.info( "doConnectLayer(): " + layer.label.get() );
         assert gridCoverageReader == null;
 
         // resolve service
-        DataSourceDescription dsd = AllResolver.instance().connectLayer( layer, monitor )
+        DataSourceDescriptor dsd = AllResolver.instance().connectLayer( layer, monitor )
                 .orElseThrow( () -> new RuntimeException( "No data source for layer: " + layer ) );
 
         if (dsd.service.get() instanceof GridCoverage2DReader) { 

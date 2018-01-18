@@ -38,7 +38,7 @@ import org.polymap.core.catalog.resolve.IResolvableInfo;
 import org.polymap.core.catalog.resolve.IResourceInfo;
 import org.polymap.core.catalog.resolve.IServiceInfo;
 import org.polymap.core.catalog.resolve.ResourceResolverExtension;
-import org.polymap.core.data.pipeline.DataSourceDescription;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.JobExecutor;
 import org.polymap.core.runtime.SubMonitor;
@@ -132,11 +132,11 @@ public class AllResolver
      * @see FeatureLayer
      * @param layer
      * @param monitor
-     * @return Newly created {@link DataSourceDescription} with (cached) service
+     * @return Newly created {@link DataSourceDescriptor} with (cached) service
      *         instance.
      * @throws Exception
      */
-    public Optional<DataSourceDescription> connectLayer( ILayer layer, IProgressMonitor monitor ) throws Exception {
+    public Optional<DataSourceDescriptor> connectLayer( ILayer layer, IProgressMonitor monitor ) throws Exception {
         monitor.beginTask( "Connect layer \"" + layer.label.get() + "\"", 10 );
         IServiceInfo serviceInfo = serviceInfo( layer, SubMonitor.on( monitor, 5 ) ).orElse( null );
         
@@ -145,7 +145,7 @@ public class AllResolver
             Object service = serviceInfo.createService( SubMonitor.on( monitor, 5 ) );
             monitor.done();
             
-            return Optional.of( new DataSourceDescription()
+            return Optional.of( new DataSourceDescriptor()
                     .service.put( service )
                     .resourceName.put( resName ) );
         }

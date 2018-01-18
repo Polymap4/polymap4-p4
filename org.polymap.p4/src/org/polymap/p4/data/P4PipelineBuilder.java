@@ -21,11 +21,11 @@ import org.polymap.core.data.feature.DataSourceProcessor;
 import org.polymap.core.data.feature.FeatureRenderProcessor2;
 import org.polymap.core.data.image.ImageDecodeProcessor;
 import org.polymap.core.data.image.ImageEncodeProcessor;
-import org.polymap.core.data.pipeline.DefaultPipelineIncubator;
-import org.polymap.core.data.pipeline.PipelineIncubator;
+import org.polymap.core.data.pipeline.AutoWirePipelineBuilder;
+import org.polymap.core.data.pipeline.PipelineBuilder;
 import org.polymap.core.data.pipeline.PipelineProcessor;
 import org.polymap.core.data.pipeline.PipelineProcessorSite;
-import org.polymap.core.data.pipeline.ProcessorDescription;
+import org.polymap.core.data.pipeline.ProcessorDescriptor;
 import org.polymap.core.data.raster.RasterRenderProcessor;
 import org.polymap.core.data.wms.WmsRenderProcessor;
 import org.polymap.core.project.ILayer;
@@ -35,9 +35,9 @@ import org.polymap.core.project.ILayer;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class P4PipelineIncubator
-        extends DefaultPipelineIncubator
-        implements PipelineIncubator {
+public class P4PipelineBuilder
+        extends AutoWirePipelineBuilder
+        implements PipelineBuilder {
 
     /** Terminal and transformer processors. */
     private static final Class<PipelineProcessor>[] defaultProcTypes = new Class[] {
@@ -50,8 +50,8 @@ public class P4PipelineIncubator
     };
 
     
-    public static P4PipelineIncubator forLayer( ILayer layer ) {
-        return new P4PipelineIncubator();
+    public static P4PipelineBuilder forLayer( ILayer layer ) {
+        return new P4PipelineBuilder();
     }
     
     
@@ -60,12 +60,12 @@ public class P4PipelineIncubator
     private Map<String,Object>      properties = new HashMap();
     
     
-    public P4PipelineIncubator() {
+    public P4PipelineBuilder() {
         super( defaultProcTypes );
     }
     
 
-    public P4PipelineIncubator addProperty( String key, Object value ) {
+    public P4PipelineBuilder addProperty( String key, Object value ) {
         if (properties.put( key, value ) != null) {
             throw new IllegalStateException( "Property already exists: " + key );
         }
@@ -74,7 +74,7 @@ public class P4PipelineIncubator
     
     
     @Override
-    protected PipelineProcessorSite createProcessorSite( ProcessorDescription procDesc ) {
+    protected PipelineProcessorSite createProcessorSite( ProcessorDescriptor procDesc ) {
         Map<String,Object> props = new HashMap( properties );
         if (procDesc.getProps() != null) {
             props.putAll( procDesc.getProps() );

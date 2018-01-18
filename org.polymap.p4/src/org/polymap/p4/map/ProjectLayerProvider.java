@@ -29,7 +29,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.polymap.core.data.feature.DefaultStyles;
 import org.polymap.core.data.feature.FeatureRenderProcessor2;
 import org.polymap.core.data.image.EncodedImageProducer;
-import org.polymap.core.data.pipeline.DataSourceDescription;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
 import org.polymap.core.data.pipeline.Pipeline;
 import org.polymap.core.mapeditor.ILayerProvider;
 import org.polymap.core.mapeditor.MapViewer;
@@ -37,7 +37,7 @@ import org.polymap.core.mapeditor.services.SimpleWmsServer;
 import org.polymap.core.project.ILayer;
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
-import org.polymap.p4.data.P4PipelineIncubator;
+import org.polymap.p4.data.P4PipelineBuilder;
 import org.polymap.rap.openlayers.layer.ImageLayer;
 import org.polymap.rap.openlayers.layer.Layer;
 import org.polymap.rap.openlayers.layer.TileLayer;
@@ -88,7 +88,7 @@ public class ProjectLayerProvider
             
             // resolve service
             IProgressMonitor monitor = new NullProgressMonitor();  //.monitorOfThread();
-            DataSourceDescription dsd = AllResolver.instance().connectLayer( layer, monitor )
+            DataSourceDescriptor dsd = AllResolver.instance().connectLayer( layer, monitor )
                     .orElseThrow( () -> new RuntimeException( "No data source for layer: " + layer ) );
 
             // feature style
@@ -100,7 +100,7 @@ public class ProjectLayerProvider
             };
 
             // create pipeline for it
-            Pipeline pipeline = P4PipelineIncubator.forLayer( layer )
+            Pipeline pipeline = P4PipelineBuilder.forLayer( layer )
                     .addProperty( FeatureRenderProcessor2.STYLE_SUPPLIER, styleSupplier )
                     .newPipeline( EncodedImageProducer.class, dsd, null );
             assert pipeline != null && pipeline.length() > 0 : "Unable to build pipeline for: " + dsd;

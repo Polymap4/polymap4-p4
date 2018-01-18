@@ -40,7 +40,7 @@ import org.polymap.core.catalog.resolve.IResolvableInfo;
 import org.polymap.core.catalog.resolve.IResourceInfo;
 import org.polymap.core.catalog.resolve.IServiceInfo;
 import org.polymap.core.data.image.EncodedImageProducer;
-import org.polymap.core.data.pipeline.DataSourceDescription;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
 import org.polymap.core.data.pipeline.Pipeline;
 import org.polymap.core.data.util.Geometries;
 import org.polymap.core.mapeditor.MapViewer;
@@ -60,7 +60,7 @@ import org.polymap.rhei.batik.toolkit.MinWidthConstraint;
 
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
-import org.polymap.p4.data.P4PipelineIncubator;
+import org.polymap.p4.data.P4PipelineBuilder;
 import org.polymap.rap.openlayers.base.OlFeature;
 import org.polymap.rap.openlayers.control.MousePositionControl;
 import org.polymap.rap.openlayers.control.ScaleLineControl;
@@ -285,8 +285,8 @@ public class PreviewMapDashlet
             @Override
             protected Pipeline createPipeline( String layerName ) {
                 try {
-                    DataSourceDescription dsd = new DataSourceDescription().service.put( ds ).resourceName.put( layerName );
-                    Pipeline pipeline = new P4PipelineIncubator().newPipeline( EncodedImageProducer.class, dsd, null );
+                    DataSourceDescriptor dsd = new DataSourceDescriptor().service.put( ds ).resourceName.put( layerName );
+                    Pipeline pipeline = new P4PipelineBuilder().newPipeline( EncodedImageProducer.class, dsd, null );
                     assert pipeline != null && pipeline.length() > 0 : "Unable to build pipeline for: " + dsd;
                     return pipeline;
                 }
