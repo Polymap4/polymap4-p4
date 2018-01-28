@@ -76,8 +76,8 @@ public class P4PipelineBuilder
     @Override
     protected PipelineProcessorSite createProcessorSite( ProcessorDescriptor procDesc ) {
         Map<String,Object> props = new HashMap( properties );
-        if (procDesc.getProps() != null) {
-            props.putAll( procDesc.getProps() );
+        if (procDesc.properties() != null) {
+            props.putAll( procDesc.properties() );
         }
         return new PipelineProcessorSite( props );
     }

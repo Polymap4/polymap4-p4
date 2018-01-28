@@ -23,6 +23,8 @@ import org.geotools.styling.Style;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.base.Throwables;
+
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
@@ -35,6 +37,7 @@ import org.polymap.core.mapeditor.ILayerProvider;
 import org.polymap.core.mapeditor.MapViewer;
 import org.polymap.core.mapeditor.services.SimpleWmsServer;
 import org.polymap.core.project.ILayer;
+
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
 import org.polymap.p4.data.P4PipelineBuilder;
@@ -102,13 +105,13 @@ public class ProjectLayerProvider
             // create pipeline for it
             Pipeline pipeline = P4PipelineBuilder.forLayer( layer )
                     .addProperty( FeatureRenderProcessor2.STYLE_SUPPLIER, styleSupplier )
-                    .newPipeline( EncodedImageProducer.class, dsd, null );
+                    .newPipeline( EncodedImageProducer.class, dsd );
             assert pipeline != null && pipeline.length() > 0 : "Unable to build pipeline for: " + dsd;
             return pipeline;
         }
         catch (Exception e) {
             log.warn( "", e );
-            return null;
+            throw Throwables.propagate( e );
         }
     }
 
