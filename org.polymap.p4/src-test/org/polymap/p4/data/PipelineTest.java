@@ -70,31 +70,29 @@ public class PipelineTest {
 
     @Test
     public void checkWMS2Image() throws Exception {
-        P4PipelineBuilder incubator = P4PipelineBuilder.forLayer( null );
+        P4PipelineBuilder builder = P4PipelineBuilder.forLayer( null );
+        FeatureRenderProcessor2.STYLE_SUPPLIER.set( builder, null );
 
         DataSourceDescriptor dsd = new DataSourceDescriptor();
         dsd.service.set( webMapServer );
         dsd.resourceName.set( "WMS" );
 
-        Pipeline p = incubator
-                .addProperty( FeatureRenderProcessor2.STYLE_SUPPLIER, null )
-                .newPipeline( ImageProducer.class, dsd );
+        Pipeline p = builder.newPipeline( ImageProducer.class, dsd );
         assertNotNull( p );
-        assertTrue( "no processors in pipeline", p.length() > 0 );
+        assertTrue( "one processors must be in pipeline", p.length() == 1 );
     }
 
 
     @Test
     public void checkWMS2EncodedImage() throws Exception {
-        P4PipelineBuilder incubator = P4PipelineBuilder.forLayer( null );
+        P4PipelineBuilder builder = P4PipelineBuilder.forLayer( null );
+        FeatureRenderProcessor2.STYLE_SUPPLIER.set( builder, null );
 
         DataSourceDescriptor dsd = new DataSourceDescriptor();
         dsd.service.set( webMapServer );
         dsd.resourceName.set( "WMS" );
 
-        Pipeline p = incubator
-                .addProperty( FeatureRenderProcessor2.STYLE_SUPPLIER, null )
-                .newPipeline( EncodedImageProducer.class, dsd );
+        Pipeline p = builder.newPipeline( EncodedImageProducer.class, dsd );
         assertNotNull( p );
         assertTrue( "one processors must be in pipeline", p.length() == 1 );
     }

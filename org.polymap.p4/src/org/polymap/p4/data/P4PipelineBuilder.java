@@ -14,17 +14,16 @@
  */
 package org.polymap.p4.data;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.polymap.core.data.feature.DataSourceProcessor;
 import org.polymap.core.data.feature.FeatureRenderProcessor2;
 import org.polymap.core.data.image.ImageDecodeProcessor;
 import org.polymap.core.data.image.ImageEncodeProcessor;
 import org.polymap.core.data.pipeline.AutoWirePipelineBuilder;
+import org.polymap.core.data.pipeline.Param.ParamsHolder;
 import org.polymap.core.data.pipeline.PipelineBuilder;
 import org.polymap.core.data.pipeline.PipelineProcessor;
 import org.polymap.core.data.pipeline.PipelineProcessorSite;
+import org.polymap.core.data.pipeline.PipelineProcessorSite.Params;
 import org.polymap.core.data.pipeline.ProcessorDescriptor;
 import org.polymap.core.data.raster.RasterRenderProcessor;
 import org.polymap.core.data.wms.WmsRenderProcessor;
@@ -37,7 +36,7 @@ import org.polymap.core.project.ILayer;
  */
 public class P4PipelineBuilder
         extends AutoWirePipelineBuilder
-        implements PipelineBuilder {
+        implements PipelineBuilder, ParamsHolder {
 
     /** Terminal and transformer processors. */
     private static final Class<PipelineProcessor>[] defaultProcTypes = new Class[] {
@@ -57,29 +56,24 @@ public class P4PipelineBuilder
     
     // instance *******************************************
     
-    private Map<String,Object>      properties = new HashMap();
+    private Params          params = new Params();
     
     
     public P4PipelineBuilder() {
         super( defaultProcTypes );
     }
     
-
-    public P4PipelineBuilder addProperty( String key, Object value ) {
-        if (properties.put( key, value ) != null) {
-            throw new IllegalStateException( "Property already exists: " + key );
-        }
-        return this;
+    @Override
+    public Params params() {
+        return params;
     }
-    
     
     @Override
     protected PipelineProcessorSite createProcessorSite( ProcessorDescriptor procDesc ) {
-        Map<String,Object> props = new HashMap( properties );
-        if (procDesc.properties() != null) {
-            props.putAll( procDesc.properties() );
-        }
-        return new PipelineProcessorSite( props );
+        Params all = new Params();
+        all.putAll( params );
+        all.putAll( procDesc.params() );
+        return new PipelineProcessorSite( all );
     }
     
 }
