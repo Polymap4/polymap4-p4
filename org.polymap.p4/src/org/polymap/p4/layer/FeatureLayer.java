@@ -155,7 +155,7 @@ public class FeatureLayer {
                 .orElseThrow( () -> new RuntimeException( "No data source for layer: " + layer ) );
 
         // create pipeline for it
-        Pipeline pipeline = P4PipelineBuilder.forLayer( layer ).newPipeline( FeaturesProducer.class, dsd );
+        Pipeline pipeline = P4PipelineBuilder.forLayer( layer ).createPipeline( FeaturesProducer.class, dsd );
         
         if (pipeline != null && pipeline.length() > 0) {
             fs = new PipelineDataStore( pipeline ).getFeatureSource();

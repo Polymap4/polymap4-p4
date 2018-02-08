@@ -14,20 +14,29 @@
  */
 package org.polymap.p4.data;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.polymap.core.data.feature.DataSourceProcessor;
 import org.polymap.core.data.feature.FeatureRenderProcessor2;
 import org.polymap.core.data.image.ImageDecodeProcessor;
 import org.polymap.core.data.image.ImageEncodeProcessor;
 import org.polymap.core.data.pipeline.AutoWirePipelineBuilder;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
 import org.polymap.core.data.pipeline.Param.ParamsHolder;
+import org.polymap.core.data.pipeline.Pipeline;
 import org.polymap.core.data.pipeline.PipelineBuilder;
+import org.polymap.core.data.pipeline.PipelineBuilderException;
 import org.polymap.core.data.pipeline.PipelineProcessor;
 import org.polymap.core.data.pipeline.PipelineProcessorSite;
 import org.polymap.core.data.pipeline.PipelineProcessorSite.Params;
 import org.polymap.core.data.pipeline.ProcessorDescriptor;
+import org.polymap.core.data.pipeline.ProcessorExtension;
 import org.polymap.core.data.raster.RasterRenderProcessor;
 import org.polymap.core.data.wms.WmsRenderProcessor;
 import org.polymap.core.project.ILayer;
+import org.polymap.core.project.ILayer.ProcessorConfig;
 
 /**
  * 
@@ -39,7 +48,7 @@ public class P4PipelineBuilder
         implements PipelineBuilder, ParamsHolder {
 
     /** Terminal and transformer processors. */
-    private static final Class<PipelineProcessor>[] defaultProcTypes = new Class[] {
+    private static final Class<PipelineProcessor>[] DEFAULT_PIPELINE_PROCESSORS = new Class[] {
         ImageEncodeProcessor.class,
         ImageDecodeProcessor.class,
         FeatureRenderProcessor2.class,
@@ -50,17 +59,33 @@ public class P4PipelineBuilder
 
     
     public static P4PipelineBuilder forLayer( ILayer layer ) {
-        return new P4PipelineBuilder();
+        List<ProcessorDescriptor> procs = new ArrayList();
+        for (ProcessorConfig config : layer.processorConfigs) {
+            Params params = new Params();
+            config.params.forEach( param -> params.put( param.key.get(), param.value.get() ) );
+            ProcessorExtension ext = ProcessorExtension.forType( config.type.get() )
+                    .orElseThrow( () -> new RuntimeException( "No extension found for: " + config.type.get() ) );
+            procs.add( new ProcessorDescriptor( ext.getProcessorType(), params ) );
+        }
+
+        return new P4PipelineBuilder( procs );
     }
     
     
     // instance *******************************************
     
-    private Params          params = new Params();
+    private Params                      params = new Params();
     
+    private List<ProcessorDescriptor>   procs;
     
+
     public P4PipelineBuilder() {
-        super( defaultProcTypes );
+        this( Collections.EMPTY_LIST );
+    }
+    
+    public P4PipelineBuilder( List<ProcessorDescriptor> procs ) {
+        super( DEFAULT_PIPELINE_PROCESSORS );
+        this.procs = procs;
     }
     
     @Override
@@ -68,6 +93,12 @@ public class P4PipelineBuilder
         return params;
     }
     
+    @Override
+    public Pipeline createPipeline( Class<? extends PipelineProcessor> usecase, DataSourceDescriptor dsd )
+            throws PipelineBuilderException {
+        return createPipeline( usecase, dsd, procs );
+    }
+
     @Override
     protected PipelineProcessorSite createProcessorSite( ProcessorDescriptor procDesc ) {
         Params all = new Params();

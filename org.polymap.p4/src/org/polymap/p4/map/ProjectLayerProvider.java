@@ -104,8 +104,8 @@ public class ProjectLayerProvider
 
             // create pipeline for it
             P4PipelineBuilder builder = P4PipelineBuilder.forLayer( layer );
-            FeatureRenderProcessor2.STYLE_SUPPLIER.set( builder, styleSupplier );
-            Pipeline pipeline = builder.newPipeline( EncodedImageProducer.class, dsd );
+            FeatureRenderProcessor2.STYLE_SUPPLIER.rawput( builder, styleSupplier );
+            Pipeline pipeline = builder.createPipeline( EncodedImageProducer.class, dsd );
             assert pipeline != null && pipeline.length() > 0 : "Unable to build pipeline for: " + dsd;
             return pipeline;
         }

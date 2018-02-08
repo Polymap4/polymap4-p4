@@ -109,8 +109,10 @@ public class LayerInfoPanel
                 .addConstraint( new PriorityConstraint( 100 ) ) );
         dashboard.addDashlet( new LayerStyleDashlet( site() )
                 .addConstraint( new PriorityConstraint( 10 ) ).setExpanded( false ) );
-        dashboard.addDashlet( new ProcessDashlet( site() )
+        dashboard.addDashlet( new LayerProcessorsDashlet()
                 .addConstraint( new PriorityConstraint( 9 ) ).setExpanded( false ) );
+        dashboard.addDashlet( new ProcessDashlet( site() )
+                .addConstraint( new PriorityConstraint( 5 ) ).setExpanded( false ) );
         dashboard.addDashlet( new DeleteLayerDashlet()
                 .addConstraint( new PriorityConstraint( 0 ) ).setExpanded( false ) );
         

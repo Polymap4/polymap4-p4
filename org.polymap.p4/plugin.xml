@@ -96,6 +96,10 @@
             id="org.polymap.p4.ProgressPanel"
             stackPriority="-900">
       </panel>
+      <panel
+            class="org.polymap.p4.layer.LayerProcessorPanel"
+            id="org.polymap.p4.LayerProcessorPanel">
+      </panel>
    </extension>
    <!--extension
          point="org.polymap.service.fs.contentProviders">

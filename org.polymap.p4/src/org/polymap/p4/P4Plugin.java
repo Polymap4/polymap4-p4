@@ -34,6 +34,9 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.polymap.core.CorePlugin;
 import org.polymap.core.catalog.CatalogProviderExtension;
 import org.polymap.core.catalog.IMetadataCatalog;
+import org.polymap.core.data.feature.storecache.StoreCacheProcessor;
+import org.polymap.core.data.rs.RDataStore;
+import org.polymap.core.data.rs.lucene.LuceneQueryDialect;
 import org.polymap.core.security.SecurityContext;
 import org.polymap.core.security.StandardConfiguration;
 import org.polymap.core.style.StylePlugin;
@@ -48,11 +51,12 @@ import org.polymap.rhei.batik.contribution.ContributionProviderExtension;
 import org.polymap.rhei.batik.contribution.IContributionProvider;
 import org.polymap.rhei.batik.toolkit.BatikDialogStatusAdapter;
 
-import org.polymap.p4.catalog.LocalCatalog;
 import org.polymap.p4.catalog.AllResolver;
+import org.polymap.p4.catalog.LocalCatalog;
 import org.polymap.p4.layer.NewLayerContribution;
 import org.polymap.p4.style.LayerStyleContrib;
 import org.polymap.p4.style.P4UIService;
+import org.polymap.recordstore.lucene.LuceneRecordStore;
 
 /**
  *
@@ -184,6 +188,13 @@ public class P4Plugin
             }
         };
         httpServiceTracker.open();
+        
+        // StoreCacheProcessor
+        File storeCacheDir = new File( CorePlugin.getDataLocation( P4Plugin.instance ), "featureCache" );
+        storeCacheDir.mkdir();
+        LuceneRecordStore rs = new LuceneRecordStore( storeCacheDir, false );
+        RDataStore cacheDs = new RDataStore( rs, new LuceneQueryDialect() );
+        StoreCacheProcessor.init( () -> cacheDs );
     }
 
 
