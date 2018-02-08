@@ -49,8 +49,8 @@ import org.polymap.rap.openlayers.source.TileWMSSource;
 import org.polymap.rap.openlayers.source.WMSRequestParams;
 
 /**
- * Builds OpenLayers layer objects for the {@link MapViewer} of the {@link ProjectMapPanel}
- * out of {@link ILayer} instances.
+ * Builds OpenLayers {@link Layer} objects for the {@link MapViewer} of the
+ * {@link ProjectMapPanel} out of {@link ILayer} instances.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
@@ -61,14 +61,15 @@ public class ProjectLayerProvider
 
     protected String                    alias;
     
-    protected Map<String,ILayer>        layers = new ConcurrentHashMap();
+    private SimpleWmsServer             wms;
     
+    protected Map<String,ILayer>        layers = new ConcurrentHashMap();
+
     
     public ProjectLayerProvider() {
         try {
             // register WMS servlet
-            alias = "/mapviewer" + hashCode();
-            P4Plugin.instance().httpService().registerServlet( alias, new SimpleWmsServer() {
+            wms = new SimpleWmsServer() {
                 @Override
                 protected String[] layerNames() {
                     throw new RuntimeException( "not yet implemented." );
@@ -77,7 +78,9 @@ public class ProjectLayerProvider
                 protected Pipeline createPipeline( String layerName ) {
                     return ProjectLayerProvider.this.createPipeline( layerName );
                 }
-            }, null, null );
+            };
+            alias = "/mapviewer" + hashCode();
+            P4Plugin.instance().httpService().registerServlet( alias, wms , null, null );
         }
         catch (Exception e) {
             throw new RuntimeException( e );
@@ -120,6 +123,7 @@ public class ProjectLayerProvider
     public Layer getLayer( ILayer elm ) {
         String layerName = elm.label.get();
         layers.put( layerName, elm );
+        wms.disposePipeline( layerName );
         return buildTiledLayer( layerName );
     }
     

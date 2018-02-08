@@ -48,7 +48,7 @@ import org.polymap.core.style.model.FeatureStyleCommitedEvent;
 public class ProjectContentProvider
         implements IStructuredContentProvider {
 
-    private static Log log = LogFactory.getLog( ProjectContentProvider.class );
+    private static final Log log = LogFactory.getLog( ProjectContentProvider.class );
     
     private IMap                map;
 
@@ -123,10 +123,10 @@ public class ProjectContentProvider
     class ProjectNodeListener {
         @EventHandler( display=true, delay=100 )
         protected void onCommit( List<ProjectNodeCommittedEvent> evs ) {
-//            for (ProjectNodeCommittedEvent ev : evs) {
-//                log.info( "ev: " + ev.getEntityId() );
-//            }
-            viewer.refresh();
+            for (ProjectNodeCommittedEvent ev : evs) {
+                log.info( "ProjectNodeListener: " + ev.getSource().label.get() + " : "+ ev.getEntityId()  );
+            }
+            viewer.refresh( true );
         }
     }
 
@@ -141,7 +141,7 @@ public class ProjectContentProvider
                 for (ILayer layer : map.layers) {
                     if (Objects.equals( layer.styleIdentifier.get(), ev.getSource().id() ) ) {
                         log.info( "refresh: " + layer.label.get() );
-                        viewer.refresh( layer );
+                        viewer.refresh( layer, false );
                     }
                 }
             }
@@ -154,7 +154,8 @@ public class ProjectContentProvider
     class PropertyListener {
         @EventHandler( display=true, delay=100 )
         protected void onPropertyChange( List<PropertyChangeEvent> evs ) {
-            viewer.refresh();
+            // layer set visble
+            viewer.refresh( true );
             
             // FIXME check if layer was just created and onCommit() did it already
 //            for (PropertyChangeEvent ev : evs) {
