@@ -49,8 +49,6 @@ import org.polymap.core.data.pipeline.Param.UISupplier;
 import org.polymap.core.data.pipeline.PipelineProcessorSite.Params;
 import org.polymap.core.data.pipeline.ProcessorExtension;
 import org.polymap.core.operation.OperationSupport;
-import org.polymap.core.project.ILayer;
-import org.polymap.core.project.ILayer.KeyValue;
 import org.polymap.core.project.ILayer.ProcessorConfig;
 import org.polymap.core.project.ops.TwoPhaseCommitOperation;
 import org.polymap.core.runtime.Polymap;
@@ -71,6 +69,7 @@ import org.polymap.rhei.batik.toolkit.IPanelSection;
 import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
 import org.polymap.rhei.field.NumberValidator;
 
+import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
 
@@ -86,17 +85,16 @@ public class LayerProcessorPanel
 
     public static final PanelIdentifier ID = PanelIdentifier.parse( "layerProcessor" );
 
-    /** Inbound: */
+    /** Inbound: The config to modify. Its Entity must have been loaded from a nested {@link UnitOfWork}. */
     @Mandatory
     @Scope(P4Plugin.Scope)
-    protected Context<ILayer>               layer;
+    protected Context<ProcessorConfig>      config;
+    
+    private ProcessorConfig                 _config;
+    
+    private UnitOfWork                      uow;
 
-    /** Inbound: */
-    @Mandatory
-    @Scope(P4Plugin.Scope)
-    protected Context<ProcessorExtension>   ext;
-
-    private ProcessorConfig                 config;
+    private ProcessorExtension              ext;
     
     private Params                          params;
 
@@ -107,32 +105,38 @@ public class LayerProcessorPanel
     public void init() {
         super.init();
         site().title.set( "Processor" );
-        
-        this.params = new Params();
-        for (ProcessorConfig candidate : layer.get().processorConfigs) {
-            if (candidate.type.get().equals( ext.get().getProcessorType().getName() ) ) {
-                config = candidate;
-                config.params.forEach( param -> params.put( param.key.get(), param.value.get() ) );
-                break;
-            }
-        }
+
+        this._config = config.get();
+        this.uow = _config.belongsTo();
+        assert uow.parent().isPresent() : "We need a nested UnitOfWork to work properly.";
+        this.ext = _config.ext.get().orElseThrow( () -> new RuntimeException( "The plugin for this processor is not installed: " + config.get().type.get() ) );
+        this.params = _config.params();
     }
     
     
     @Override
+    public void dispose() {
+        super.dispose();
+//        if (uow.isOpen()) {
+//            uow.close();
+//        }
+    }
+
+
+    @Override
     public void createContents( Composite parent ) {
         parent.setLayout( FormLayoutFactory.defaults().margins( 3, 10 ).create() );
         
-        IPanelSection section = tk().createPanelSection( parent, ext.get().getName(), SWT.BORDER );
+        IPanelSection section = tk().createPanelSection( parent, ext.getName(), SWT.BORDER );
         FormDataFactory.on( section.getControl() ).fill().noBottom();
         section.getBody().setLayout( ColumnLayoutFactory.defaults().columns( 1, 1 ).margins( 0, 5 ).spacing( 10 ).create() );
 
-        Label label = tk().createLabel( section.getBody(), ext.get().getDescription().orElse( "No description." ), SWT.WRAP );
+        Label label = tk().createLabel( section.getBody(), ext.getDescription().orElse( "No description." ), SWT.WRAP );
         label.setLayoutData( ColumnDataFactory.defaults().widthHint( 300 ).create() );
         label.setEnabled( false );
         
         AtomicBoolean isFirst = new AtomicBoolean( true );
-        Class cl = ext.get().getProcessorType();
+        Class cl = ext.getProcessorType();
         for (Field f : cl.getDeclaredFields()) {
             Param.UI a = f.getAnnotation( Param.UI.class );
             if (a != null) {
@@ -156,8 +160,8 @@ public class LayerProcessorPanel
         
         // FAB
         fab = tk().createFab();
-        fab.setVisible( false );
-        fab.setEnabled( false );
+//        fab.setVisible( false );
+//        fab.setEnabled( false );
         fab.addSelectionListener( UIUtils.selectionListener( ev -> submit( ev ) ) );
     }
     
@@ -213,36 +217,28 @@ public class LayerProcessorPanel
             @Override
             protected IStatus doWithCommit( IProgressMonitor monitor, IAdaptable info ) throws Exception {
                 monitor.beginTask( getLabel(), 1 );
-                register( layer.get().belongsTo() );
-                
-                if (config != null) {
-                    config.params.clear();
-                }
-                else {
-                    config = layer.get().processorConfigs.createElement( 
-                            ProcessorConfig.defaults( "", ext.get().getProcessorType().getName() ) );
-                }
-                params.entrySet().forEach( param -> config.params.createElement( (KeyValue proto) -> {
-                    proto.key.set( param.getKey() );
-                    proto.value.set( (String)param.getValue() );
-                    return proto;
-                }));
-                
+                register( uow );
+                register( uow.parent().get() );
+                _config.updateParams( params );
                 monitor.done();
                 return Status.OK_STATUS;
             }
             @Override
             protected void onSuccess() {
+                uow.close();
                 UIThreadExecutor.async( () -> {
                     tk().createSnackbar( Appearance.FadeIn, "Saved" );
                     fab.setEnabled( false );
-                    //getContext().closePanel( site().path() );
+                    fab.getDisplay().timerExec( 2500, () -> getContext().closePanel( site().path() ) );
                 });
             }
             @Override
             protected void onError( Throwable e ) {
-                UIThreadExecutor.async( () -> 
-                        StatusDispatcher.handleError( "Unable to submit changes.", e ) );
+                uow.close();
+                UIThreadExecutor.async( () -> {
+                    getContext().closePanel( site().path() );
+                    StatusDispatcher.handleError( "Unable to submit changes.", e );
+                });
             }
         };
         OperationSupport.instance().execute2( op, true, false );

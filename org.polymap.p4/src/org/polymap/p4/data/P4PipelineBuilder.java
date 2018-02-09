@@ -61,13 +61,10 @@ public class P4PipelineBuilder
     public static P4PipelineBuilder forLayer( ILayer layer ) {
         List<ProcessorDescriptor> procs = new ArrayList();
         for (ProcessorConfig config : layer.processorConfigs) {
-            Params params = new Params();
-            config.params.forEach( param -> params.put( param.key.get(), param.value.get() ) );
-            ProcessorExtension ext = ProcessorExtension.forType( config.type.get() )
-                    .orElseThrow( () -> new RuntimeException( "No extension found for: " + config.type.get() ) );
-            procs.add( new ProcessorDescriptor( ext.getProcessorType(), params ) );
+            ProcessorExtension ext = config.ext.get()
+                    .orElseThrow( () -> new RuntimeException( "Plugin of processor is not installed: " + config.type.get() ) );
+            procs.add( new ProcessorDescriptor( ext.getProcessorType(), config.params() ) );
         }
-
         return new P4PipelineBuilder( procs );
     }
     

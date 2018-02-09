@@ -123,9 +123,6 @@ public class ProjectContentProvider
     class ProjectNodeListener {
         @EventHandler( display=true, delay=100 )
         protected void onCommit( List<ProjectNodeCommittedEvent> evs ) {
-            for (ProjectNodeCommittedEvent ev : evs) {
-                log.info( "ProjectNodeListener: " + ev.getSource().label.get() + " : "+ ev.getEntityId()  );
-            }
             viewer.refresh( true );
         }
     }
