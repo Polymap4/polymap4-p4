@@ -108,9 +108,8 @@ public class ProjectLayerProvider
             // create pipeline for it
             P4PipelineBuilder builder = P4PipelineBuilder.forLayer( layer );
             FeatureRenderProcessor2.STYLE_SUPPLIER.rawput( builder, styleSupplier );
-            Pipeline pipeline = builder.createPipeline( EncodedImageProducer.class, dsd );
-            assert pipeline != null && pipeline.length() > 0 : "Unable to build pipeline for: " + dsd;
-            return pipeline;
+            return builder.createPipeline( EncodedImageProducer.class, dsd )
+                    .orElseThrow( () -> new RuntimeException( "Unable to build pipeline for: " + dsd ) );
         }
         catch (Exception e) {
             log.warn( "", e );
@@ -122,9 +121,13 @@ public class ProjectLayerProvider
     @Override
     public Layer getLayer( ILayer elm ) {
         String layerName = elm.label.get();
+        String styleHash = elm.styleIdentifier.opt().map( styleId ->
+                "#" + P4Plugin.styleRepo().serializedFeatureStyle( styleId, String.class ).get().hashCode() )
+                .orElse( "defaultStyle" );
+                
         layers.put( layerName, elm );
         wms.disposePipeline( layerName );
-        return buildTiledLayer( layerName );
+        return buildTiledLayer( layerName, styleHash );
     }
     
 
@@ -142,7 +145,7 @@ public class ProjectLayerProvider
     }
     
     
-    protected Layer buildTiledLayer( String layerName ) {
+    protected Layer buildTiledLayer( String layerName, String styleHash ) {
         return new TileLayer()
                 .source.put( new TileWMSSource()
                         //.tileGrid.put( new TileGrid( "ol.tilegrid.TileGrid" ) {}.tileSize.put( new Size( 1024, 1024 ) ) )
@@ -150,6 +153,7 @@ public class ProjectLayerProvider
                         .params.put( new WMSRequestParams()
                                 .version.put( "1.1.1" )  // send "SRS" param
                                 .layers.put( layerName )
+                                .styles.put( styleHash )
                                 .format.put( "image/png" ) ) );
     }
     

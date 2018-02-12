@@ -138,7 +138,7 @@ public class ProjectContentProvider
                 for (ILayer layer : map.layers) {
                     if (Objects.equals( layer.styleIdentifier.get(), ev.getSource().id() ) ) {
                         log.info( "refresh: " + layer.label.get() );
-                        viewer.refresh( layer, false );
+                        viewer.refresh( layer, true );
                     }
                 }
             }

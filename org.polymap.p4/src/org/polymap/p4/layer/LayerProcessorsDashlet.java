@@ -25,7 +25,9 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerCell;
+import org.eclipse.jface.viewers.ViewerComparator;
 
 import org.polymap.core.data.pipeline.Pipeline;
 import org.polymap.core.data.pipeline.PipelineProcessor;
@@ -219,6 +221,11 @@ public class LayerProcessorsDashlet
                     ProcessorExtension ext = (ProcessorExtension)cell.getElement();
                     cell.setText( ext.getDescription().orElse( "" ) );            
                 }));
+                list.setComparator( new ViewerComparator() {
+                    @Override public int compare( Viewer viewer, Object elm1, Object elm2 ) {
+                        return ((ProcessorExtension)elm1).getName().compareTo( ((ProcessorExtension)elm2).getName() );
+                    }
+                });
                 list.setContentProvider( new ListTreeContentProvider() );
                 list.setInput( ProcessorExtension.all() );
                 

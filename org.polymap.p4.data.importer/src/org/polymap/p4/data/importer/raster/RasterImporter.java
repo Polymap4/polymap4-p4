@@ -52,6 +52,7 @@ import org.polymap.p4.data.importer.prompts.SchemaNamePrompt;
  *
  * @author Falko Bräutigam
  */
+@SuppressWarnings( "deprecation" )
 public class RasterImporter
         implements Importer {
 

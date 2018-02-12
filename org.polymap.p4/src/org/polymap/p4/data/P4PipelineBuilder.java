@@ -17,6 +17,7 @@ package org.polymap.p4.data;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.polymap.core.data.feature.DataSourceProcessor;
 import org.polymap.core.data.feature.FeatureRenderProcessor2;
@@ -91,9 +92,9 @@ public class P4PipelineBuilder
     }
     
     @Override
-    public Pipeline createPipeline( Class<? extends PipelineProcessor> usecase, DataSourceDescriptor dsd )
+    public Optional<Pipeline> createPipeline( Class<? extends PipelineProcessor> usecase, DataSourceDescriptor dsd )
             throws PipelineBuilderException {
-        return createPipeline( usecase, dsd, procs );
+        return Optional.ofNullable( createPipeline( usecase, dsd, procs ) );
     }
 
     @Override

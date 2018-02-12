@@ -113,7 +113,7 @@ public abstract class AbstractRefineFileImporter<T extends FormatAndOptions>
     @ContextIn
     protected File                       file;
 
-    @SuppressWarnings("rawtypes")
+    //@SuppressWarnings("rawtypes")
     @ContextOut
     protected FeatureCollection          features;
 

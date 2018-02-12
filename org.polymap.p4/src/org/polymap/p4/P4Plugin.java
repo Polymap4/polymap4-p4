@@ -35,6 +35,7 @@ import org.polymap.core.CorePlugin;
 import org.polymap.core.catalog.CatalogProviderExtension;
 import org.polymap.core.catalog.IMetadataCatalog;
 import org.polymap.core.data.feature.storecache.StoreCacheProcessor;
+import org.polymap.core.data.image.cache304.ImageCacheProcessor;
 import org.polymap.core.data.rs.RDataStore;
 import org.polymap.core.data.rs.lucene.LuceneQueryDialect;
 import org.polymap.core.security.SecurityContext;
@@ -190,11 +191,19 @@ public class P4Plugin
         httpServiceTracker.open();
         
         // StoreCacheProcessor
-        File storeCacheDir = new File( CorePlugin.getDataLocation( P4Plugin.instance ), "featureCache" );
-        storeCacheDir.mkdir();
-        LuceneRecordStore rs = new LuceneRecordStore( storeCacheDir, false );
-        RDataStore cacheDs = new RDataStore( rs, new LuceneQueryDialect() );
-        StoreCacheProcessor.init( () -> cacheDs );
+        StoreCacheProcessor.init( () -> {
+            File storeCacheDir = new File( CorePlugin.getCacheLocation( P4Plugin.instance ), "features" );
+            storeCacheDir.mkdir();
+            LuceneRecordStore rs = new LuceneRecordStore( storeCacheDir, false );
+            return new RDataStore( rs, new LuceneQueryDialect() );            
+        });
+
+        // ImageCacheProcessor
+        ImageCacheProcessor.init( () -> {
+            File imageCacheDir = new File( CorePlugin.getCacheLocation( P4Plugin.instance ), "imagetiles" );
+            imageCacheDir.mkdir();
+            return imageCacheDir;            
+        });
     }
 
 

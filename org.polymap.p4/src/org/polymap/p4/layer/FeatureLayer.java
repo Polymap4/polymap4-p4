@@ -20,6 +20,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import java.io.IOException;
+
 import org.geotools.data.DataStore;
 import org.geotools.data.FeatureSource;
 import org.opengis.feature.Feature;
@@ -36,7 +38,6 @@ import org.polymap.core.data.PipelineDataStore;
 import org.polymap.core.data.PipelineFeatureSource;
 import org.polymap.core.data.feature.FeaturesProducer;
 import org.polymap.core.data.pipeline.DataSourceDescriptor;
-import org.polymap.core.data.pipeline.Pipeline;
 import org.polymap.core.data.pipeline.PipelineBuilderException;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.JobExecutor;
@@ -155,11 +156,13 @@ public class FeatureLayer {
                 .orElseThrow( () -> new RuntimeException( "No data source for layer: " + layer ) );
 
         // create pipeline for it
-        Pipeline pipeline = P4PipelineBuilder.forLayer( layer ).createPipeline( FeaturesProducer.class, dsd );
-        
-        if (pipeline != null && pipeline.length() > 0) {
-            fs = new PipelineDataStore( pipeline ).getFeatureSource();
-        }
+        P4PipelineBuilder.forLayer( layer )
+                .createPipeline( FeaturesProducer.class, dsd )
+                .ifPresent( pipeline -> {
+                    try { fs = new PipelineDataStore( pipeline ).getFeatureSource(); }
+                    catch (IOException e) { throw new RuntimeException( e ); }
+                });
+
         return this;
     }
 

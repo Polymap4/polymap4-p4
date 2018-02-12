@@ -77,7 +77,7 @@ public class PipelineTest {
         dsd.service.set( webMapServer );
         dsd.resourceName.set( "WMS" );
 
-        Pipeline p = builder.createPipeline( ImageProducer.class, dsd );
+        Pipeline p = builder.createPipeline( ImageProducer.class, dsd ).orElse( null );
         assertNotNull( p );
         assertTrue( "one processors must be in pipeline", p.length() == 1 );
     }
@@ -92,7 +92,7 @@ public class PipelineTest {
         dsd.service.set( webMapServer );
         dsd.resourceName.set( "WMS" );
 
-        Pipeline p = builder.createPipeline( EncodedImageProducer.class, dsd );
+        Pipeline p = builder.createPipeline( EncodedImageProducer.class, dsd ).orElse( null );
         assertNotNull( p );
         assertTrue( "one processors must be in pipeline", p.length() == 1 );
     }
@@ -106,7 +106,7 @@ public class PipelineTest {
         dsd.service.set( dataAccess );
         dsd.resourceName.set( "Features" );
 
-        Pipeline p = incubator.createPipeline( EncodedImageProducer.class, dsd );
+        Pipeline p = incubator.createPipeline( EncodedImageProducer.class, dsd ).orElse( null );
         assertNotNull( p );
         assertTrue( "one processors must be in pipeline", p.length() > 0 );
     }
