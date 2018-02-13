@@ -20,6 +20,14 @@
             class="org.polymap.p4.data.importer.raster.AddLayerForImportedRasterConcern"
             id="org.polymap.p4.data.importer.concern1">
       </concern>
+      <concern
+            class="org.polymap.p4.data.importer.wfs.WfsNewLayerOperationConcern"
+            id="org.polymap.p4.data.importer.WfsNewLayerOperationConcern">
+      </concern>
+      <concern
+            class="org.polymap.p4.data.importer.image.CacheNewLayerOperationConcern"
+            id="org.polymap.p4.data.importer.CacheNewLayerOperationConcern">
+      </concern>
    </extension>
    <extension
          point="org.polymap.p4.data.importer.importers">

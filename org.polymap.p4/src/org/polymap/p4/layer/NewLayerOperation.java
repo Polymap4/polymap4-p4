@@ -40,6 +40,7 @@ import org.polymap.core.ui.StatusDispatcher;
 import org.polymap.rhei.batik.toolkit.DefaultToolkit;
 import org.polymap.rhei.batik.toolkit.SimpleDialog;
 
+import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.p4.catalog.AllResolver;
 
 /**
@@ -110,7 +111,7 @@ public class NewLayerOperation
         if (!resId.isPresent()) {
             resId.set( AllResolver.resourceIdentifier( res.get() ) );
         }
-        initializer.set( (ILayer proto) -> {
+        ValueInitializer<ILayer> chained = initializer.get().and( (ILayer proto) -> {
             proto.label.set( label
                     .orElse( () -> res.get().getName() ) );
             proto.description.set( res
@@ -123,6 +124,7 @@ public class NewLayerOperation
                     .orElse( null ) );
             return proto;
         });
+        initializer.set( chained );
 
         // super
         IStatus superResult = super.doWithCommit( monitor, info );
