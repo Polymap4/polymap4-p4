@@ -14,6 +14,9 @@
  */
 package org.polymap.p4.layer;
 
+import static org.polymap.core.runtime.event.TypeEventFilter.ifType;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -38,12 +41,15 @@ import org.polymap.core.data.PipelineDataStore;
 import org.polymap.core.data.PipelineFeatureSource;
 import org.polymap.core.data.feature.FeaturesProducer;
 import org.polymap.core.data.pipeline.DataSourceDescriptor;
+import org.polymap.core.data.pipeline.Pipeline;
 import org.polymap.core.data.pipeline.PipelineBuilderException;
 import org.polymap.core.project.ILayer;
+import org.polymap.core.project.ProjectNode.ProjectNodeCommittedEvent;
 import org.polymap.core.runtime.JobExecutor;
 import org.polymap.core.runtime.UIJob;
 import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.runtime.cache.Cache;
+import org.polymap.core.runtime.event.EventHandler;
 import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.runtime.session.SessionSingleton;
 
@@ -63,7 +69,7 @@ import org.polymap.p4.data.P4PipelineBuilder;
  */
 public class FeatureLayer {
     
-    private static Log log = LogFactory.getLog( FeatureLayer.class );
+    private static final Log log = LogFactory.getLog( FeatureLayer.class );
 
     public static final FilterFactory2  ff = DataPlugin.ff;
 
@@ -145,8 +151,32 @@ public class FeatureLayer {
     
     protected FeatureLayer( ILayer layer ) {
         this.layer = layer;
+        
+        EventManager.instance().subscribe( this, ifType( ProjectNodeCommittedEvent.class, ev -> 
+                    ev.isEntity( layer ) ) );
     }
 
+    
+    /**
+     * Listen to changes of the {@link #layer}. Builds a new pipeline to reflect
+     * possible changes of the processors and/or their params.
+     */
+    @EventHandler( delay=100 )
+    protected void handleLayerCommit( List<ProjectNodeCommittedEvent> evs ) {
+        if (fs != null) {
+            new UIJob( "Update pipeline" ) {
+                @Override
+                protected void runWithException( IProgressMonitor monitor ) throws Exception {
+                    log.info( "handleLayerCommit(): " + layer.label.get() );
+                    DataSourceDescriptor dsd = fs.pipeline().dataSourceDescription();
+                    Pipeline newPipeline = P4PipelineBuilder.forLayer( layer ).createPipeline( FeaturesProducer.class, dsd )
+                            .orElseThrow( () -> new PipelineBuilderException( "Unable to build pipeline for: " + layer  ) );
+                    fs.setPipeline( newPipeline );
+                }
+            }.schedule();
+        }
+    }
+    
     
     protected FeatureLayer doConnectLayer( IProgressMonitor monitor ) throws PipelineBuilderException, Exception {
         assert fs == null;
