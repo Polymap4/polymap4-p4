@@ -15,10 +15,10 @@ package org.polymap.p4.data.importer.wfs;
 import static org.polymap.core.ui.FormDataFactory.on;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 
@@ -40,6 +40,7 @@ import org.apache.commons.logging.LogFactory;
 import com.google.common.collect.Sets;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -57,6 +58,7 @@ import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.runtime.i18n.IMessages;
 import org.polymap.core.ui.FormDataFactory;
 import org.polymap.core.ui.FormLayoutFactory;
+import org.polymap.core.ui.UIUtils;
 
 import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
 import org.polymap.rhei.batik.toolkit.IPanelToolkit;
@@ -72,6 +74,7 @@ import org.polymap.p4.data.importer.ImporterPrompt.Severity;
 import org.polymap.p4.data.importer.ImporterSite;
 import org.polymap.p4.data.importer.Messages;
 import org.polymap.p4.data.importer.shapefile.ShpFeatureTableViewer;
+import org.polymap.p4.data.importer.wms.OwsMetadata;
 import org.polymap.p4.data.importer.wms.WmsImporter;
 
 /**
@@ -90,19 +93,21 @@ public class WfsImporter
 
     private static final WFSDataStoreFactory dsf  = new WFSDataStoreFactory();
 
-    private ImporterSite           site;
+    private ImporterSite            site;
 
-    private Exception              exception;
+    private Exception               exception;
 
-    private ImporterPrompt         urlPrompt;
+    private ImporterPrompt          urlPrompt;
 
-    private String                 url;
+    private String                  url;
 
-    private WFSDataStore           ds;
+    private WFSDataStore            ds;
 
     //private SimpleFeatureSource    fs;
 
-    private IPanelToolkit          toolkit;
+    private IPanelToolkit           toolkit;
+
+    private Composite               resultArea;
 
 
     @Override
@@ -133,8 +138,7 @@ public class WfsImporter
                     @Override
                     public void createContents( ImporterPrompt prompt, Composite parent, IPanelToolkit tk ) {
                         parent.setLayout( FormLayoutFactory.defaults().spacing( 3 ).create() );
-                        Text text = on( tk.createText( parent, 
-                                url != null ? url : "", SWT.BORDER, SWT.WRAP, SWT.MULTI ) )
+                        Text text = on( tk.createText( parent, url != null ? url : "", SWT.BORDER, SWT.WRAP, SWT.MULTI ) )
                                 .top( 0 ).left( 0 ).right( 100 ).width( DEFAULT_WIDTH ).height( 40 ).control();
                         text.forceFocus();
 
@@ -170,7 +174,7 @@ public class WfsImporter
                 URL getCapabilities = WFSDataStoreFactory.createGetCapabilitiesRequest( new URL( url ) );
                 log.info( "URL: " + getCapabilities );
                 params.put( WFSDataStoreFactory.URL.key, getCapabilities );
-                params.put( WFSDataStoreFactory.TIMEOUT.key, 20000 );
+                params.put( WFSDataStoreFactory.TIMEOUT.key, 10000 );
 
                 ds = (WFSDataStore)dsf.createDataStore( params );
 
@@ -208,38 +212,47 @@ public class WfsImporter
     public void createResultViewer( Composite parent, IPanelToolkit tk ) {
         this.toolkit = tk;
         try {
-            if (exception != null) {
+            if (ds == null) {
+                tk.createFlowText( parent, "Please specify the URL of the service." );
+            }
+            else if (exception != null) {
                 tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + exception.getMessage() );
             }
             else if (ds.getNames().isEmpty()) {
                 tk.createFlowText( parent, "\nNo data types found." );
             }
             else {
-                parent.setLayout( FormLayoutFactory.defaults().spacing( 5 ).create() );
-                Combo combo = tk.adapt( new Combo( parent, SWT.READ_ONLY ), false, false );
+                //tabs = tk.createTabViewer( parent );
+                parent.setLayout( FormLayoutFactory.defaults().spacing( 3 ).create() );
+                Combo combo = tk.adapt( new Combo( parent, SWT.READ_ONLY|SWT.FLAT ), false, false );
+                combo.setFont( UIUtils.bold( combo.getFont() ) );
+                combo.forceFocus();
                 FormDataFactory.on( combo ).fill().noBottom();
 
                 combo.setVisibleItemCount( 8 );
-                for (Name name : (List<Name>)ds.getNames()) {
-                    combo.add( name.getLocalPart() );
-                }
+                combo.add( "Overview" );
+                ds.getNames().forEach( name -> combo.add( name.getLocalPart() ) );
+                
+                resultArea = tk.createComposite( parent );
+                FormDataFactory.on( resultArea ).fill().top( combo );
+                
                 SelectionAdapter handler = new SelectionAdapter() {
-                    private ShpFeatureTableViewer resultTable;
-
                     @Override
                     public void widgetSelected( SelectionEvent ev ) {
-                        if (resultTable != null) {
-                            resultTable.dispose();
+                        UIUtils.disposeChildren( resultArea );                        
+                        if (combo.getText().equals( "Overview" )) {
+                            createOverview( resultArea, tk );
                         }
-                        resultTable = createFeatureTable( parent, tk, combo.getText() );
-                        FormDataFactory.on( resultTable.getControl() ).fill().top( combo );
+                        else {
+                            createFeatureTable( resultArea, tk, combo.getText() );
+                        }
+                        resultArea.layout( true );
                         parent.layout( true );
                     }
                 };
                 combo.addSelectionListener( handler );
                 combo.select( 0 );
                 handler.widgetSelected( null );
-                combo.forceFocus();
             }
         }
         catch (Exception e) {
@@ -251,6 +264,34 @@ public class WfsImporter
     }
 
     
+    protected void createOverview( Composite parent, IPanelToolkit tk ) {
+        ScrolledComposite scrolledComposite = new ScrolledComposite( parent, SWT.V_SCROLL | SWT.H_SCROLL );
+        scrolledComposite.setExpandHorizontal( true );
+        scrolledComposite.setExpandVertical( true );
+
+        Composite content = tk.createComposite( scrolledComposite );
+        scrolledComposite.setContent( content );
+        //int preferredWidth = preferredWidth( parent );
+        
+        try {
+            // the great gt-wfs-ng does not provide info about the service
+            //WFSGetCapabilities capabilities = ds.getWfsClient().getCapabilities();
+            OwsMetadata md = new OwsMetadata()
+                    .markdown( ds.getInfo() )
+                    .markdownLayers( ds.getNames() );
+                    //.markdown( "\n\nClick on \"Overview\" to preview data." );
+            tk.createFlowText( content, md.toString() );
+        }
+        catch (IOException e) {
+            UIUtils.disposeChildren( parent );
+            log.warn( "", e );
+            tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + e.getMessage() );
+            site.ok.set( false );
+            exception = e;
+        }
+    }
+    
+    
     protected ShpFeatureTableViewer createFeatureTable( Composite parent, IPanelToolkit tk, String typeName ) {
         try {
             ContentFeatureSource fs = ds.getFeatureSource( typeName );
@@ -260,12 +301,12 @@ public class WfsImporter
             table.setContentProvider( new FeatureCollectionContentProvider() );
 
             Query query = new Query();
-            query.setMaxFeatures( 100 );
+            query.setMaxFeatures( 25 );
             SimpleFeatureCollection content = fs.getFeatures( query );
             table.setInput( content );
             return table;
         }
-        catch (Exception e) {
+        catch (IOException e) {
             log.warn( "", e );
             tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + e.getMessage() );
             site.ok.set( false );
@@ -319,7 +360,7 @@ public class WfsImporter
         return StringUtils.defaultIfBlank( s, null );
     }
 
-    private int preferredWidth( Composite parent ) {
+    protected int preferredWidth( Composite parent ) {
         return Math.min( parent.getDisplay().getClientArea().width, 400 ) - 50;
     }
     

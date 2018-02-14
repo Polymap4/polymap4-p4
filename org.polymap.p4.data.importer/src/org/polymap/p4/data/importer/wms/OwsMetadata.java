@@ -14,11 +14,15 @@
  */
 package org.polymap.p4.data.importer.wms;
 
+import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
+
 import java.util.Arrays;
 import java.util.List;
 
+import org.geotools.data.ServiceInfo;
 import org.geotools.data.ows.Layer;
 import org.geotools.data.ows.Service;
+import org.opengis.feature.type.Name;
 import org.opengis.metadata.citation.Address;
 import org.opengis.metadata.citation.Contact;
 import org.opengis.metadata.citation.ResponsibleParty;
@@ -58,6 +62,21 @@ public class OwsMetadata {
         }
 
         markdown( service.getContactInformation() );
+        return this;
+    }
+    
+    
+    public OwsMetadata markdown( ServiceInfo info ) {
+        markdownH3( defaultIfBlank( info.getTitle(), "No title"  ) );
+        markdown( defaultIfBlank( info.getDescription(), "No description." ) );
+//        markdown( info.getKeywords().toString() );
+        
+//        if (service.getOnlineResource() != null) {
+//            //markdownH3( i18n.get( "onlineResource" ) );
+//            markdown( "*" + service.getOnlineResource().toString() + "*" );
+//        }
+
+        //markdown( service.getContactInformation() );
         return this;
     }
     
@@ -125,6 +144,15 @@ public class OwsMetadata {
         markdownH3( i18n.get( "layers" ) );
         for (Layer layer : layers) {
             markdownListItem( layer.getTitle() );
+        }
+        return this;
+    }
+    
+    
+    public OwsMetadata markdownLayers( List<Name> layers ) {
+        markdownH3( i18n.get( "layers" ) );
+        for (Name name : layers) {
+            markdownListItem( name.toString() );
         }
         return this;
     }
