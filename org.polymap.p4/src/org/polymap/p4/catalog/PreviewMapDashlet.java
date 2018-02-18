@@ -286,7 +286,7 @@ public class PreviewMapDashlet
             protected Pipeline createPipeline( String layerName ) {
                 try {
                     DataSourceDescriptor dsd = new DataSourceDescriptor().service.put( ds ).resourceName.put( layerName );
-                    Pipeline pipeline = new P4PipelineBuilder().createPipeline( EncodedImageProducer.class, dsd )
+                    Pipeline pipeline = new P4PipelineBuilder( layerName ).createPipeline( EncodedImageProducer.class, dsd )
                             .orElseThrow( () -> new RuntimeException( "Unable to build pipeline for: " + dsd ) );
                     return pipeline;
                 }

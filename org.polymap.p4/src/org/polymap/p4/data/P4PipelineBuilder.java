@@ -27,7 +27,6 @@ import org.polymap.core.data.pipeline.AutoWirePipelineBuilder;
 import org.polymap.core.data.pipeline.DataSourceDescriptor;
 import org.polymap.core.data.pipeline.Param.ParamsHolder;
 import org.polymap.core.data.pipeline.Pipeline;
-import org.polymap.core.data.pipeline.PipelineBuilder;
 import org.polymap.core.data.pipeline.PipelineBuilderException;
 import org.polymap.core.data.pipeline.PipelineProcessor;
 import org.polymap.core.data.pipeline.PipelineProcessorSite;
@@ -46,7 +45,7 @@ import org.polymap.core.project.ILayer.ProcessorConfig;
  */
 public class P4PipelineBuilder
         extends AutoWirePipelineBuilder
-        implements PipelineBuilder, ParamsHolder {
+        implements ParamsHolder {
 
     /** Terminal and transformer processors. */
     private static final Class<PipelineProcessor>[] DEFAULT_PIPELINE_PROCESSORS = new Class[] {
@@ -66,7 +65,7 @@ public class P4PipelineBuilder
                     .orElseThrow( () -> new RuntimeException( "Plugin of processor is not installed: " + config.type.get() ) );
             procs.add( new ProcessorDescriptor( ext.getProcessorType(), config.params() ) );
         }
-        return new P4PipelineBuilder( procs );
+        return new P4PipelineBuilder( (String)layer.id(), procs );
     }
     
     
@@ -75,15 +74,18 @@ public class P4PipelineBuilder
     private Params                      params = new Params();
     
     private List<ProcessorDescriptor>   procs;
+
+    private String                      layerId;
     
 
-    public P4PipelineBuilder() {
-        this( Collections.EMPTY_LIST );
+    public P4PipelineBuilder( String layerId ) {
+        this( layerId, Collections.EMPTY_LIST );
     }
     
-    public P4PipelineBuilder( List<ProcessorDescriptor> procs ) {
+    public P4PipelineBuilder( String layerId, List<ProcessorDescriptor> procs ) {
         super( DEFAULT_PIPELINE_PROCESSORS );
         this.procs = procs;
+        this.layerId = layerId;
     }
     
     @Override
@@ -91,10 +93,17 @@ public class P4PipelineBuilder
         return params;
     }
     
-    @Override
     public Optional<Pipeline> createPipeline( Class<? extends PipelineProcessor> usecase, DataSourceDescriptor dsd )
             throws PipelineBuilderException {
-        return Optional.ofNullable( createPipeline( usecase, dsd, procs ) );
+        return Optional.ofNullable( createPipeline( layerId, usecase, dsd, procs ) );
+    }
+
+    @Override
+    @SuppressWarnings( "hiding" )
+    public Optional<Pipeline> createPipeline( String layerId, Class<? extends PipelineProcessor> usecase, 
+            DataSourceDescriptor dsd ) throws PipelineBuilderException {
+        assert this.layerId.equals( layerId );
+        return createPipeline( usecase, dsd );
     }
 
     @Override

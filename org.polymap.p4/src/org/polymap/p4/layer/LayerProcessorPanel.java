@@ -14,17 +14,10 @@
  */
 package org.polymap.p4.layer;
 
-import static java.lang.Long.parseLong;
-import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
-
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.text.MessageFormat;
 import java.time.Duration;
 
 import org.apache.commons.logging.Log;
@@ -42,15 +35,19 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 
 import org.polymap.core.data.pipeline.Param;
 import org.polymap.core.data.pipeline.Param.UISupplier;
+import org.polymap.core.data.pipeline.PipelineProcessorSite;
 import org.polymap.core.data.pipeline.PipelineProcessorSite.Params;
 import org.polymap.core.data.pipeline.ProcessorExtension;
 import org.polymap.core.operation.OperationSupport;
+import org.polymap.core.project.ILayer;
 import org.polymap.core.project.ILayer.ProcessorConfig;
 import org.polymap.core.project.ops.TwoPhaseCommitOperation;
+import org.polymap.core.runtime.DurationFormat;
 import org.polymap.core.runtime.Polymap;
 import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.ui.ColumnDataFactory;
@@ -72,6 +69,7 @@ import org.polymap.rhei.field.NumberValidator;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
+import org.polymap.p4.catalog.AllResolver;
 
 /**
  * 
@@ -84,6 +82,10 @@ public class LayerProcessorPanel
     private static final Log log = LogFactory.getLog( LayerProcessorPanel.class );
 
     public static final PanelIdentifier ID = PanelIdentifier.parse( "layerProcessor" );
+
+    /** Inbound: */
+    @Scope(P4Plugin.Scope)
+    protected Context<ILayer>               layer;
 
     /** Inbound: The config to modify. Its Entity must have been loaded from a nested {@link UnitOfWork}. */
     @Mandatory
@@ -202,7 +204,11 @@ public class LayerProcessorPanel
         else {
             throw new RuntimeException( "Unsupported Param type: " + param.type() );
         }
-        return supplier.createContents( parent, param, params );
+        
+        PipelineProcessorSite procSite = new PipelineProcessorSite( params );
+        procSite.layerId.set( layer.get().id() );
+        procSite.dsd.set( AllResolver.instance().connectLayer( layer.get(), new NullProgressMonitor() ).get() );
+        return supplier.createContents( parent, param, procSite );
     }
 
     
@@ -252,63 +258,37 @@ public class LayerProcessorPanel
             implements Param.UISupplier<String> {
 
         @Override
-        @SuppressWarnings( "hiding" )
-        public Control createContents( Composite parent, Param<String> param, Params params ) {
-            Optional<String> value = param.opt( params );
+        public Control createContents( Composite parent, Param<String> param, PipelineProcessorSite site ) {
+            Optional<String> value = param.opt( site.params() );
             Text control = tk().createText( parent, value.orElse( "" ), SWT.BORDER );
             control.addModifyListener( ev -> {
-                param.put( params, control.getText() );
+                param.put( site.params(), control.getText() );
                 notifyChange( this );
             });
             return control;
         }
     }
     
+
     /**
      * 
      */
     class DurationSupplier
             implements Param.UISupplier<Duration> {
 
-        public final Pattern PATTERN = Pattern.compile( 
-                "((\\d{1,3})d(ay)*)*\\s*" +   // 123d(ay) 
-                "((\\d{1,2})h(our)*)*\\s*" +  // 12h(our) 
-                "((\\d{1,2})m(in)*)*\\s*" +   // 12m(in) 
-                "((\\d{1,2})s(ec)*)*\\s*",    // 12s(ec) 
-                Pattern.CASE_INSENSITIVE );
-        
-        public final MessageFormat FORMAT = new MessageFormat( "", Polymap.getSessionLocale() );
+        public final DurationFormat FORMAT = DurationFormat.getInstance( Polymap.getSessionLocale() );
 
         @Override
-        @SuppressWarnings( "hiding" )
-        public Control createContents( Composite parent, Param<Duration> param, Params params ) {
-            Optional<String> value = param.opt( params ).map( v -> {
-                StringBuffer result = new StringBuffer( 16 );
-                if (v.toDays() > 0) {
-                    result.append( v.toDays() ).append( "d " );
-                    v = v.minusDays( v.toDays() );
-                }
-                if (v.toHours() > 0) {
-                    result.append( v.toHours() ).append( "h " );
-                    v = v.minusHours( v.toHours() );
-                }
-                if (v.toMinutes() > 0) {
-                    result.append( v.toMinutes() ).append( "m " );
-                    v = v.minusMinutes( v.toMinutes() );
-                }
-                if (v.getSeconds() > 0) {
-                    result.append( v.getSeconds() ).append( "s " );
-                }
-                return result.toString();
-            });
+        public Control createContents( Composite parent, Param<Duration> param, PipelineProcessorSite site ) {
+            Optional<String> value = param.opt( site.params() ).map( v -> FORMAT.format( v ) );
             
             Text control = tk().createText( parent, value.orElse( "" ), SWT.BORDER );
             control.setToolTipText( "Duration: \"1d 2h 3m 4s\" or \"1hour 2min\"" );
 
             Color defaultForeground = control.getForeground();
             control.addModifyListener( ev -> {
-                Matcher matcher = PATTERN.matcher( control.getText() );
-                if (!matcher.matches()) {
+                Optional<Duration> parsed = FORMAT.parse( control.getText() );
+                if (!parsed.isPresent()) {
                     control.setForeground( UISupplier.errorColor() );
                     control.setToolTipText( "Not valid. Example: \"1d 2h 3m 4s\" or \"1hour 2min\"" );
                 }
@@ -316,18 +296,16 @@ public class LayerProcessorPanel
                     control.setForeground( defaultForeground );
                     control.setToolTipText( null );
                     
-                    Duration newValue = Duration.ofDays( parseLong( defaultIfBlank( matcher.group( 2 ), "0" ) ) )
-                            .plus( Duration.ofHours( parseLong( defaultIfBlank( matcher.group( 5 ), "0" ) ) ) )
-                            .plus( Duration.ofMinutes( parseLong( defaultIfBlank( matcher.group( 8 ), "0" ) ) ) )
-                            .plus( Duration.ofSeconds( parseLong( defaultIfBlank( matcher.group( 11 ), "0" ) ) ) );
+                    Duration newValue = parsed.get();
                     log.info( "Duration: " + newValue );
-                    param.put( params, newValue );
+                    param.put( site.params(), newValue );
                 }
                 notifyChange( this );
             });
             return control;
         }
     }
+    
     
     /**
      * 
@@ -338,8 +316,7 @@ public class LayerProcessorPanel
         private NumberValidator         validator;
         
         @Override
-        @SuppressWarnings( "hiding" )
-        public Control createContents( Composite parent, Param<Number> param, Params params ) {
+        public Control createContents( Composite parent, Param<Number> param, PipelineProcessorSite site ) {
             if (Integer.class.isAssignableFrom( param.type() ) || Integer.TYPE.equals( param.type() )) {
                 validator = new NumberValidator( Integer.class, Polymap.getSessionLocale(), 10, 0, 1, 0 );
             }
@@ -356,7 +333,7 @@ public class LayerProcessorPanel
                 throw new RuntimeException( "Unsupported Number type: " + param.type() );
             }
 
-            Optional<String> value = param.opt( params ).map( v -> transform2Field( v ) );
+            Optional<String> value = param.opt( site.params() ).map( v -> transform2Field( v ) );
             Text control = tk().createText( parent, value.orElse( "" ), SWT.BORDER );
             Color defaultForeground = control.getForeground();
             control.addModifyListener( ev -> {
@@ -372,7 +349,7 @@ public class LayerProcessorPanel
                     try {
                         // set value
                         Number newValue = validator.transform2Model( control.getText() );
-                        param.put( params, newValue );
+                        param.put( site.params(), newValue );
                         notifyChange( this );
                     }
                     catch (Exception e) {
