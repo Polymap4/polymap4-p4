@@ -6,7 +6,7 @@ Bundle-SymbolicName: org.polymap.p4.data.importer;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: org.polymap.p4.data.importer.ImporterPlugin
 Bundle-Vendor: polymap.org
-Require-Bundle: org.polymap.core.data;bundle-version="4.0.0",
+Require-Bundle: org.polymap.core.data;bundle-version="4.0.2",
  org.polymap.core.data.refine;bundle-version="4.0.0",
  org.polymap.core.data.rs;bundle-version="4.0.0",
  org.polymap.core.data.shapefile;bundle-version="4.0.0",
