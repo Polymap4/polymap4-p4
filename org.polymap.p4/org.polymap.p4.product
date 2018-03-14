@@ -12,7 +12,6 @@
    <windowImages/>
 
    <launcher>
-      <solaris/>
       <win useIco="false">
          <bmp/>
       </win>
@@ -89,7 +88,6 @@
       <plugin id="org.polymap.rhei.form"/>
       <plugin id="org.polymap.rhei.form.batik"/>
       <plugin id="org.polymap.rhei.fulltext"/>
-      <plugin id="org.polymap.rhei.um"/>
    </plugins>
 
    <configurations>
