@@ -301,17 +301,16 @@ public class LayersPanel
         @Override
         public void perform( MdListViewer _viewer, Object elm ) {
             FeatureLayer.of( (ILayer)elm ).thenAccept( fl -> {
-                if (fl.isPresent()) {
-                    // check: feature layer without geom
-                    if (fl.get().featureSource().getSchema().getGeometryDescriptor() != null) {
-                        UIThreadExecutor.async( () -> super.perform( _viewer, elm ) );
+                UIThreadExecutor.async( () -> {
+                    if (fl.isPresent() && fl.get().featureSource().getSchema().getGeometryDescriptor() == null) {
+                        StatusDispatcher.handle( new Status( IStatus.INFO, P4Plugin.ID, i18n.get( "invisible" ) ), Style.SHOW, Style.LOG );
+                        setSelected( elm, Boolean.FALSE );
+                        viewer.update( elm, null );
+                        onSelection( viewer, elm, isSelected( elm ) );
                         return;
                     }
-                    StatusDispatcher.handle( new Status( IStatus.INFO, P4Plugin.ID, i18n.get( "invisible" ) ), Style.SHOW, Style.LOG );
-                }
-                else {
-                    UIThreadExecutor.async( () -> super.perform( _viewer, elm ) );
-                }
+                    super.perform( _viewer, elm );
+                });
             })
             .exceptionally( e -> {
                 StatusDispatcher.handleError( "Unable to set visibility of layer.", e );
