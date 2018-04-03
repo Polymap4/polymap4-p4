@@ -53,7 +53,6 @@ public class ResourceInfoDashlet
     
     
     public ResourceInfoDashlet( IResourceInfo res ) {
-        super();
         this.res = res;
     }
 
@@ -61,9 +60,9 @@ public class ResourceInfoDashlet
     @Override
     public void init( DashletSite site ) {
         super.init( site );
-        site.title.set( P4Panel.title( "Data set", res.getTitle() ) );
-        site.constraints.get().add( new MinWidthConstraint( 400, 1 ) );
-        site.border.set( false );
+        site.title.set( res.getTitle() );
+        site.constraints.get().add( new MinWidthConstraint( P4Panel.SIDE_PANEL_WIDTH, 1 ) );
+        site.border.set( true );
     }
 
     

@@ -128,10 +128,10 @@ public class PreviewMapDashlet
     @Override
     public void init( DashletSite site ) {
         super.init( site );
-        site.title.set( "Preview" );
+        site.title.set( "Map preview" );
         //site.constraints.get().add( new PriorityConstraint( 100 ) );
         site.constraints.get().add( new MinWidthConstraint( P4Panel.SIDE_PANEL_WIDTH, 1 ) );
-        site.constraints.get().add( new MinHeightConstraint( P4Panel.SIDE_PANEL_WIDTH-50, 1 ) );
+        site.constraints.get().add( new MinHeightConstraint( P4Panel.SIDE_PANEL_WIDTH-60, 1 ) );
         site.border.set( false );
     }
 

@@ -171,9 +171,9 @@ public class P4Plugin
         catalogs = CatalogProviderExtension.createAllCatalogs();
         localCatalog = (LocalCatalog)catalogs.stream().filter( c -> c instanceof LocalCatalog ).findAny()
                 .orElseThrow( () -> new IllegalStateException( "No LocalCatalog found." ) );
-        List<IMetadataCatalog> localFirst = catalogs.stream()
+        catalogs = catalogs.stream()  // local first
                 .sorted( (c1,c2) -> c1 instanceof LocalCatalog ? -1 : 0 ).collect( Collectors.toList() );
-        allResolver = new AllResolver( localFirst );
+        allResolver = new AllResolver( catalogs );
         
         // Style
         File styleDataDir = CorePlugin.getDataLocation( StylePlugin.instance() );

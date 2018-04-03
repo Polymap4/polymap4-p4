@@ -109,7 +109,7 @@ public class LayersPanel
     @Scope(P4Plugin.Scope)
     protected Context<ILayer>           selected;
     
-    private MdListViewer                viewer;
+    private MdListViewer                list;
 
     private DropTarget                  dropTarget;
 
@@ -117,7 +117,7 @@ public class LayersPanel
     
     
     public MdListViewer getViewer() {
-        return viewer;
+        return list;
     }
 
 
@@ -148,20 +148,28 @@ public class LayersPanel
         site().title.set( i18n.get( "title" ) );
         parent.setLayout( FormLayoutFactory.defaults().create() );
         
-        viewer = tk().createListViewer( parent, SWT.SINGLE, SWT.FULL_SELECTION );
-        viewer.setContentProvider( new ProjectNodeContentProvider() );
+        list = tk().createListViewer( parent, SWT.SINGLE, SWT.FULL_SELECTION );
+        list.setContentProvider( new ProjectNodeContentProvider() );
 
-        viewer.firstLineLabelProvider.set( new ProjectNodeLabelProvider( Label ).abbreviate.put( 35 ) );
+        list.firstLineLabelProvider.set( new ProjectNodeLabelProvider( Label ).abbreviate.put( 35 ) );
         //viewer.secondLineLabelProvider.set( new ProjectNodeLabelProvider( Description ).abbreviate.put( 35 ) );
-        viewer.iconProvider.set( new LayerIconProvider() );
+        list.iconProvider.set( new LayerIconProvider() );
         
-        viewer.secondSecondaryActionProvider.set( new LayerVisibleAction());
-        viewer.thirdSecondaryActionProvider.set( new LayerActiveAction() );
-        viewer.firstSecondaryActionProvider.set( new LayerUpDownAction() );
-        
-        viewer.addOpenListener( new IOpenListener() {
-            @Override
-            public void open( OpenEvent ev ) {
+        list.secondSecondaryActionProvider.set( new LayerVisibleAction());
+        list.thirdSecondaryActionProvider.set( new LayerActiveAction() );
+        //viewer.firstSecondaryActionProvider.set( new LayerUpDownAction() );
+        list.firstSecondaryActionProvider.set( new ActionProvider() {
+            @Override public void update( ViewerCell cell ) {
+                cell.setImage( P4Plugin.images().svgImage( "chevron-right.svg", SvgImageRegistryHelper.NORMAL24 ) );
+            }
+            @Override public void perform( MdListViewer viewer, Object elm ) {
+                selected.set( (ILayer)elm );
+                getContext().openPanel( site().path(), LayerInfoPanel.ID );
+            }
+        });
+
+        list.addOpenListener( new IOpenListener() {
+            @Override public void open( OpenEvent ev ) {
                 SelectionAdapter.on( ev.getSelection() ).forEach( elm -> {
                     selected.set( (ILayer)elm );
                     getContext().openPanel( site().path(), LayerInfoPanel.ID );
@@ -171,18 +179,18 @@ public class LayersPanel
 
         // DnD
         int operations = DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_DEFAULT | DND.DROP_LINK;
-        dropTarget = new DropTarget( viewer.getControl(), operations );
+        dropTarget = new DropTarget( list.getControl(), operations );
         dropTarget.setTransfer( new Transfer[] {LocalSelectionTransfer.getTransfer()} );
         dropTarget.addDropListener( new DropListener() );
         
-        dragSource = new DragSource( viewer.getControl(), operations );
+        dragSource = new DragSource( list.getControl(), operations );
         dragSource.setTransfer( new Transfer[] {LocalSelectionTransfer.getTransfer()} );
         dragSource.addDragListener( new DragListener() );
         
-        viewer.setInput( map.get() );
+        list.setInput( map.get() );
 
         // noBottom: avoid empty rows and lines
-        viewer.getTree().setLayoutData( FormDataFactory.filled()/*.noBottom()*/.create() );
+        list.getTree().setLayoutData( FormDataFactory.filled()/*.noBottom()*/.create() );
         
         // listen to ILayer changes
         EventManager.instance().subscribe( this, ifType( ProjectNodeCommittedEvent.class, ev -> 
@@ -192,11 +200,11 @@ public class LayersPanel
     
     @EventHandler( display=true, delay=100, scope=Event.Scope.JVM )
     protected void projectChanged( List<ProjectNodeCommittedEvent> evs ) {
-        if (viewer == null || viewer.getControl().isDisposed()) {
+        if (list == null || list.getControl().isDisposed()) {
             EventManager.instance().unsubscribe( LayersPanel.this );            
         }
         else {
-            viewer.refresh();
+            list.refresh();
         }
     }
 
@@ -208,7 +216,7 @@ public class LayersPanel
             extends ViewerDropAdapter {
 
         protected DropListener() {
-            super( viewer );
+            super( list );
             setFeedbackEnabled( true );
             setScrollEnabled( true );
             setSelectionFeedbackEnabled( false );
@@ -275,7 +283,7 @@ public class LayersPanel
     
         public LayerVisibleAction() {
             super( P4Plugin.images().svgImage( "eye.svg", SvgImageRegistryHelper.NORMAL24 ),
-                    BatikPlugin.images().svgImage( "checkbox-blank-circle-outline.svg", NORMAL24 ) );
+                    BatikPlugin.images().svgImage( "checkbox-blank-outline.svg", NORMAL24 ) );
         }
 
         @Override
@@ -305,8 +313,8 @@ public class LayersPanel
                     if (fl.isPresent() && fl.get().featureSource().getSchema().getGeometryDescriptor() == null) {
                         StatusDispatcher.handle( new Status( IStatus.INFO, P4Plugin.ID, i18n.get( "invisible" ) ), Style.SHOW, Style.LOG );
                         setSelected( elm, Boolean.FALSE );
-                        viewer.update( elm, null );
-                        onSelection( viewer, elm, isSelected( elm ) );
+                        list.update( elm, null );
+                        onSelection( list, elm, isSelected( elm ) );
                         return;
                     }
                     super.perform( _viewer, elm );
@@ -353,12 +361,11 @@ public class LayersPanel
         @EventHandler( display=true )
         protected void onFeatureLayerChange( PropertyAccessEvent ev ) {
             if (ev.getOldValue() != null) {
-                updateSelection( viewer, ((FeatureLayer)ev.getOldValue()).layer(), false );
+                updateSelection( list, ((FeatureLayer)ev.getOldValue()).layer(), false );
             }
         }
         
         @Override
-        @SuppressWarnings( "hiding" )
         protected Object initSelection( MdListViewer viewer ) {
             return featureLayer.isPresent() ? featureLayer.get().layer() : null;
         }
@@ -427,7 +434,7 @@ public class LayersPanel
         }
 
         @Override
-        public void perform( @SuppressWarnings( "hiding" ) MdListViewer viewer, Object elm ) {
+        public void perform( MdListViewer viewer, Object elm ) {
             layer = (ILayer)elm;
             
             EventManager.instance().subscribe( this, ifType( ProjectNodeCommittedEvent.class, ev -> 
