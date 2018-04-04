@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.core.data.PipelineFeatureSource;
+import org.polymap.core.mapeditor.MapViewer;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.ui.FormDataFactory;
@@ -55,7 +56,10 @@ public class LayerStyleDashlet
     /** Inbound: */
     @Scope( P4Plugin.Scope )
     private Context<ILayer>             layer;
-    
+
+    @Scope( P4Plugin.Scope )
+    protected Context<MapViewer<ILayer>> mainMapViewer;
+
     private PanelSite                   panelSite;
     
     private StyleEditor                 editor;
@@ -113,6 +117,11 @@ public class LayerStyleDashlet
                         editorInput.styleIdentifier.set( layer.get().styleIdentifier.get() ); 
                         editorInput.featureStore.set( fs );
                         editorInput.featureType.set( fs.getSchema() );
+                        mainMapViewer.ifPresent( mapViewer -> {
+                            editorInput.maxExtent.set( mapViewer.maxExtent.get() );
+                            editorInput.mapExtent.set( mapViewer.mapExtent.get() );
+                            editorInput.mapSize.set( mapViewer.getControl().getSize() );
+                        });
                         
                         editor = new FeatureStyleEditor( editorInput ) {
                             @Override

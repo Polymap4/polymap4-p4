@@ -29,10 +29,10 @@ public class FeatureStyleEditorInput
 
     @Mandatory
     @Immutable
-    public Config<FeatureType>  featureType;
+    public Config<FeatureType>      featureType;
 
     @Mandatory
     @Immutable
-    public Config<FeatureStore> featureStore;
+    public Config<FeatureStore>     featureStore;
 
 }

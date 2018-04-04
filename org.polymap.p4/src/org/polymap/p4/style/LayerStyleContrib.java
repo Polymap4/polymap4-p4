@@ -15,9 +15,9 @@
 package org.polymap.p4.style;
 
 import java.util.Optional;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
+import org.polymap.core.mapeditor.MapViewer;
+import org.polymap.core.project.ILayer;
 import org.polymap.core.runtime.i18n.IMessages;
 import org.polymap.core.ui.StatusDispatcher;
 
@@ -44,20 +44,24 @@ import org.polymap.p4.map.ProjectMapPanel;
 public class LayerStyleContrib
         implements IToolbarContribution {
 
-    private static Log log = LogFactory.getLog( LayerStyleContrib.class );
-
     private static final IMessages          i18n = Messages.forPrefix( "Styler" );
 
     private ActionItem                      item;
     
     private Optional<LayerStylePanel>       childPanel = Optional.empty();
 
+    /** Outbound: */
     @Scope( P4Plugin.StyleScope )
     protected Context<FeatureStyleEditorInput> editorInput;
 
     @Scope( P4Plugin.Scope )
     protected Context<FeatureLayer>         featureLayer;
-    
+
+    /** Inbound: */
+    @Scope( P4Plugin.Scope )
+    protected Context<MapViewer<ILayer>>    mainMapViewer;
+
+
     
     @Override
     public void fillToolbar( IContributionSite site, MdToolbar2 toolbar ) {
@@ -71,6 +75,11 @@ public class LayerStyleContrib
                     editorInput.get().styleIdentifier.set( fs.layer().styleIdentifier.get() ); 
                     editorInput.get().featureStore.set( fs.featureSource() );
                     editorInput.get().featureType.set( fs.featureSource().getSchema() );
+                    mainMapViewer.ifPresent( mapViewer -> {
+                        editorInput.get().maxExtent.set( mapViewer.maxExtent.get() );
+                        editorInput.get().mapExtent.set( mapViewer.mapExtent.get() );
+                        editorInput.get().mapSize.set( mapViewer.getControl().getSize() );
+                    });
 
                     item = new ActionItem( toolbar );
                     item.text.set( "" );

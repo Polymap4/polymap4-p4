@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2016, the @authors. All rights reserved.
+ * Copyright (C) 2016-2018, the @authors. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -29,8 +29,9 @@ import org.polymap.model2.Composite;
 /**
  * 
  * <p/>
- * This is also a cache for already returned Style {@link Composite} instances. As the cache behaviour of Model2
- * Composite properties is not clearly defined it is vary important to cachereturn <b>just one</b> Composite instance 
+ * This is also a cache for already returned Style {@link Composite} instances. As
+ * the cache behaviour of Model2 Composite properties is not clearly defined it is
+ * very important to return <b>just one</b> Composite instance.
  *
  * @author Falko Bräutigam
  */

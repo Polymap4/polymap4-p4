@@ -101,7 +101,8 @@ public class ProjectLayerProvider
             Supplier<Style> styleSupplier = () -> {
                 String styleId = layer.styleIdentifier.get();
                 return styleId != null
-                    ? P4Plugin.styleRepo().serializedFeatureStyle( styleId, Style.class ).get()
+                    ? P4Plugin.styleRepo().serializedFeatureStyle( styleId, Style.class )
+                            .orElse( DefaultStyles.createAllStyle() )
                     : DefaultStyles.createAllStyle();
             };
 
@@ -121,9 +122,15 @@ public class ProjectLayerProvider
     @Override
     public Layer getLayer( ILayer elm ) {
         String layerName = elm.label.get();
-        String styleHash = elm.styleIdentifier.opt().map( styleId ->
-                "#" + P4Plugin.styleRepo().serializedFeatureStyle( styleId, String.class ).get().hashCode() )
-                .orElse( "defaultStyle" );
+        String styleHash = "defaultStyle";
+        try {
+            styleHash = elm.styleIdentifier.opt().map( styleId ->
+                    "#" + P4Plugin.styleRepo().serializedFeatureStyle( styleId, String.class ).get().hashCode() )
+                    .orElse( "defaultStyle" );
+        }
+        catch (Throwable e) {
+            log.error( "", e );
+        }
                 
         layers.put( layerName, elm );
         wms.disposePipeline( layerName );

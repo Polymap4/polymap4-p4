@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2015-2016, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2015-2018, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -55,6 +55,9 @@ public abstract class FeatureStyleEditor
         fieldSite.prop.set( prop );
         fieldSite.featureStore.set( editorInput.featureStore.get() );
         fieldSite.featureType.set( editorInput.featureType.get() );
+        fieldSite.maxExtent = editorInput.maxExtent;
+        fieldSite.mapExtent = editorInput.mapExtent;
+        fieldSite.mapSize = editorInput.mapSize;
         return fieldSite;
     }
 

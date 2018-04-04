@@ -55,6 +55,9 @@ public abstract class RasterStyleEditor
         StylePropertyFieldSite fieldSite = new StylePropertyFieldSite();
         fieldSite.prop.set( prop );
         fieldSite.gridCoverage.set( editorInput.gridCoverage.get() );
+        fieldSite.maxExtent = editorInput.maxExtent;
+        fieldSite.mapExtent = editorInput.mapExtent;
+        fieldSite.mapSize = editorInput.mapSize;
         return fieldSite;
     }
 

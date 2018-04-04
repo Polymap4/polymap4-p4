@@ -12,6 +12,12 @@
  */
 package org.polymap.p4.style;
 
+import org.geotools.geometry.jts.ReferencedEnvelope;
+
+import com.vividsolutions.jts.geom.Envelope;
+
+import org.eclipse.swt.graphics.Point;
+
 import org.polymap.core.runtime.config.Config;
 import org.polymap.core.runtime.config.Configurable;
 import org.polymap.core.runtime.config.Immutable;
@@ -28,6 +34,15 @@ public abstract class StyleEditorInput
 
     @Mandatory
     @Immutable
-    public Config<String>       styleIdentifier;
+    public Config<String>               styleIdentifier;
+
+    /** Optional: the current extent of the map. */
+    public Config<Envelope>             mapExtent;
+
+    /** Optional: the maximum extent of the map. */
+    public Config<ReferencedEnvelope>   maxExtent;
+
+    /** Optional: the maximum extent of the map. */
+    public Config<Point>                mapSize;
 
 }

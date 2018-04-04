@@ -36,6 +36,7 @@ import org.polymap.core.project.ProjectNode.ProjectNodeCommittedEvent;
 import org.polymap.core.runtime.event.EventHandler;
 import org.polymap.core.runtime.event.EventManager;
 import org.polymap.core.style.model.FeatureStyleCommitedEvent;
+import org.polymap.core.ui.StatusDispatcher;
 
 /**
  * Provides the content of an {@link IMap}.
@@ -133,14 +134,18 @@ public class ProjectContentProvider
     class StyleListener {
         @EventHandler( display=true, delay=100 )
         protected void onCommit( List<FeatureStyleCommitedEvent> evs ) {
-            log.info( "..." );
-            for (FeatureStyleCommitedEvent ev : evs) {
-                for (ILayer layer : map.layers) {
-                    if (Objects.equals( layer.styleIdentifier.get(), ev.getSource().id() ) ) {
-                        log.info( "refresh: " + layer.label.get() );
-                        viewer.refresh( layer, true );
+            try {
+                for (FeatureStyleCommitedEvent ev : evs) {
+                    for (ILayer layer : map.layers) {
+                        if (Objects.equals( layer.styleIdentifier.get(), ev.getSource().id() ) ) {
+                            log.info( "refresh: " + layer.label.get() );
+                            viewer.refresh( layer, true );
+                        }
                     }
                 }
+            }
+            catch (Exception e) {
+                StatusDispatcher.handleError( "", e );
             }
         }
     }

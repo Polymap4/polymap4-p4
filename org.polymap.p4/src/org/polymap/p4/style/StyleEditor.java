@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2017, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2017-2018, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -28,15 +28,24 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.DragSource;
+import org.eclipse.swt.dnd.DragSourceAdapter;
+import org.eclipse.swt.dnd.DragSourceEvent;
+import org.eclipse.swt.dnd.DropTarget;
+import org.eclipse.swt.dnd.TransferData;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
 
+import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.IElementComparer;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerCell;
+import org.eclipse.jface.viewers.ViewerDropAdapter;
+import org.eclipse.jface.viewers.ViewerSorter;
 
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Section;
@@ -99,6 +108,10 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
     protected List<StylePropertyField>  fields = new ArrayList();
 
     protected MdToolkit                 tk;
+
+    private DragSource dragSource;
+
+    private DropTarget dropTarget;
     
 
     public StyleEditor( I editorInput ) {
@@ -110,6 +123,12 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
     
     public void dispose() {
         EventManager.instance().unsubscribe( this );
+        if (dragSource != null) {
+            dragSource.dispose();
+        }
+        if (dropTarget != null) {
+            dropTarget.dispose();
+        }
     }
 
     
@@ -143,6 +162,11 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
         list.secondSecondaryActionProvider.set( new ActiveActionProvider() );
         list.firstSecondaryActionProvider.set( new RemoveActionProvider() );
         list.setComparer( new StyleIdentityComparer() );
+        list.setSorter( new ViewerSorter() {
+            @Override public int compare( Viewer viewer, Object elm1, Object elm2 ) {
+                return ((Style)elm2).zPriority.get().compareTo( ((Style)elm1).zPriority.get() );
+            }
+        });
         list.addSelectionChangedListener( ev -> {
             try {
                 Optional<?> elm = org.polymap.core.ui.SelectionAdapter.on( ev.getSelection() ).first();
@@ -169,6 +193,47 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
                 list.setSelection( new StructuredSelection( first ) );
             });
         }
+        
+        // drag&drop
+        LocalSelectionTransfer transfer = LocalSelectionTransfer.getTransfer();
+        dragSource = UIUtils.addDragSupport( list.getControl(), transfer, new DragSourceAdapter() {
+            @Override 
+            public void dragSetData( DragSourceEvent ev ) {
+                transfer.setSelection( list.getSelection() );
+                log.info( "dragSetData(): " + ev.data );
+            }
+        });
+        dropTarget = UIUtils.addDropSupport( list.getControl(), transfer, new ViewerDropAdapter( list ) { 
+            { setSelectionFeedbackEnabled( false ); }
+            @Override 
+            public boolean validateDrop( Object target, int op, TransferData type ) {
+                return transfer.isSupportedType( type ) || target == null || target instanceof Style;
+            }
+            @Override 
+            public boolean performDrop( Object data ) {
+                Style source = UIUtils.selection( transfer.getSelection() ).first( Style.class ).get();
+                Style target = (Style)getCurrentTarget();
+                featureStyle.styles.get().members.forEach( s -> log.info( "   " + s.title.get() + " - " +s.zPriority.get() ) );
+                switch (getCurrentLocation()) {
+                    case LOCATION_BEFORE:
+                    case LOCATION_ON: {
+                        source.setZPriority( target, false );
+                        break;
+                    }
+                    case LOCATION_NONE: {
+                        source.zPriority.set( source.minZPriority() - 1 );
+                        break;
+                    }
+                    default: {
+                        log.warn( "Not implemented: location=" + getCurrentLocation() );
+                    }
+                }
+                //featureStyle.store();
+                featureStyle.styles.get().members.forEach( s -> log.info( "   " + s.title.get() + " - " +s.zPriority.get() ) );
+                list.refresh();
+                return true;
+            }
+        });
         
         //
         editorSection = tk.createPanelSection( parent, "" );
@@ -209,23 +274,23 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
         });
         title.setToolTipText( i18nField.get( "styleNameTooltip" ) );
         
-        // description
-        Text descr = new Text( headLine, SWT.BORDER );
-        //descr.setBackground( bg );
-        descr.setForeground( new HSLColor( parent.getForeground() ).adjustLuminance( 30 ).toSWT() );
-        descr.setText( style.description.get() );
-        descr.addModifyListener( new ModifyListener() {
-            @Override
-            public void modifyText( ModifyEvent ev ) {
-                // XXX sanitize user input string (?)
-                style.description.set( descr.getText() );
-                list.update( style, null );
-            }
-        } );
-        descr.setToolTipText( i18nField.get( "styleDescriptionTooltip" ) );
+//        // description
+//        Text descr = new Text( headLine, SWT.BORDER );
+//        //descr.setBackground( bg );
+//        descr.setForeground( new HSLColor( parent.getForeground() ).adjustLuminance( 30 ).toSWT() );
+//        descr.setText( style.description.get() );
+//        descr.addModifyListener( new ModifyListener() {
+//            @Override
+//            public void modifyText( ModifyEvent ev ) {
+//                // XXX sanitize user input string (?)
+//                style.description.set( descr.getText() );
+//                list.update( style, null );
+//            }
+//        } );
+//        descr.setToolTipText( i18nField.get( "styleDescriptionTooltip" ) );
 
-        on( title ).left( 0 ).right( 30 );
-        on( descr ).left( title, 3 ).right( 100 );
+//      on( descr ).left( title, 3 ).right( 100 );
+        on( title ).left( 0 ).right( 100 );
 
         fields.clear();
         createEditorFields( parent, style, 0 );
