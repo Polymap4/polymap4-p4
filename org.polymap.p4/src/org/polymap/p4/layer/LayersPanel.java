@@ -27,12 +27,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.DragSourceAdapter;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DropTarget;
-import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.dnd.TransferData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Button;
@@ -68,6 +66,7 @@ import org.polymap.core.ui.FormLayoutFactory;
 import org.polymap.core.ui.SelectionAdapter;
 import org.polymap.core.ui.StatusDispatcher;
 import org.polymap.core.ui.StatusDispatcher.Style;
+import org.polymap.core.ui.UIUtils;
 
 import org.polymap.rhei.batik.BatikPlugin;
 import org.polymap.rhei.batik.Context;
@@ -114,6 +113,8 @@ public class LayersPanel
     private DropTarget                  dropTarget;
 
     private DragSource                  dragSource;
+    
+    private LocalSelectionTransfer      transfer = LocalSelectionTransfer.getTransfer();
     
     
     public MdListViewer getViewer() {
@@ -178,14 +179,9 @@ public class LayersPanel
         });
 
         // DnD
-        int operations = DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_DEFAULT | DND.DROP_LINK;
-        dropTarget = new DropTarget( list.getControl(), operations );
-        dropTarget.setTransfer( new Transfer[] {LocalSelectionTransfer.getTransfer()} );
-        dropTarget.addDropListener( new DropListener() );
-        
-        dragSource = new DragSource( list.getControl(), operations );
-        dragSource.setTransfer( new Transfer[] {LocalSelectionTransfer.getTransfer()} );
-        dragSource.addDragListener( new DragListener() );
+        //int operations = DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_DEFAULT | DND.DROP_LINK;
+        dropTarget = UIUtils.addDropSupport( list.getControl(), transfer, new DropListener() );
+        dragSource = UIUtils.addDragSupport( list.getControl(), transfer, new DragListener() );
         
         list.setInput( map.get() );
 
@@ -217,20 +213,40 @@ public class LayersPanel
 
         protected DropListener() {
             super( list );
-            setFeedbackEnabled( true );
-            setScrollEnabled( true );
             setSelectionFeedbackEnabled( false );
         }
 
-        @Override
-        public boolean performDrop( Object data ) {
-            log.info( "drop: " + data );
-            return true;
+        @Override 
+        public boolean validateDrop( Object target, int op, TransferData type ) {
+            // XXX check source type
+            return transfer.isSupportedType( type ) || target == null || target instanceof ILayer;
         }
-
-        @Override
-        public boolean validateDrop( Object target, int operation, TransferData transferType ) {
-            log.info( "validate: " + target );
+        
+        @Override 
+        public boolean performDrop( Object data ) {
+            ILayer source = UIUtils.selection( transfer.getSelection() ).first( ILayer.class ).orElse( null );
+            ILayer target = (ILayer)getCurrentTarget();
+            switch (getCurrentLocation()) {
+                case LOCATION_BEFORE:
+                case LOCATION_ON: {
+                    if (source != target) {
+                        List<ILayer> ordered = source.orderedLayers();
+                        ordered.remove( source );
+                        ordered.add( ordered.indexOf( target ) + 1, source );
+                        source.updateOrderKeys( ordered );
+                    }
+                    break;
+                }
+                case LOCATION_NONE: {
+                    source.orderKey.set( source.minOrderKey() - 1 );
+                    break;
+                }
+                default: {
+                    log.warn( "Not implemented: location=" + getCurrentLocation() );
+                }
+            }
+            source.belongsTo().commit();
+//            list.refresh();
             return true;
         }
     }
@@ -240,8 +256,8 @@ public class LayersPanel
             extends DragSourceAdapter {
 
         @Override
-        public void dragFinished( DragSourceEvent ev ) {
-            log.info( "Drag: " + ev );
+        public void dragSetData( DragSourceEvent event ) {
+            transfer.setSelection( list.getSelection() );
         }
     }
     
