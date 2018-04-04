@@ -282,6 +282,12 @@ public class WfsImporter
                     //.markdown( "\n\nClick on \"Overview\" to preview data." );
             tk.createFlowText( content, md.toString() );
         }
+        // XXX wfs-ng seems to be buggy with WFS2.0
+        catch (ClassCastException e) {
+            UIUtils.disposeChildren( parent );
+            log.warn( "", e );
+            tk.createFlowText( parent, "\nUnable to read description from server." );
+        }
         catch (Throwable e) {
             UIUtils.disposeChildren( parent );
             log.warn( "", e );
@@ -328,7 +334,9 @@ public class WfsImporter
                 try {
                     metadata.setType( "Service" );
                     metadata.setFormats( Sets.newHashSet( "WFS" ) );
-                    metadata.setTitle( serviceInfo.getTitle() );
+                    // XXX wfs-ng seems to be buggy with WFS2.0
+                    metadata.setTitle( serviceInfo.getTitle().contains( "LanguageStringType" )
+                            ? url : serviceInfo.getTitle() );
                     metadata.setDescription( normalize( serviceInfo.getDescription() ) );
                 }
                 catch (Exception e) {
