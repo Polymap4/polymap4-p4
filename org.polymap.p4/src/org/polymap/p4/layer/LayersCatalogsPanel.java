@@ -14,6 +14,8 @@
  */
 package org.polymap.p4.layer;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,27 +32,39 @@ import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreePath;
+import org.eclipse.jface.viewers.ViewerCell;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.core.catalog.IMetadata;
+import org.polymap.core.catalog.IMetadataCatalog;
+import org.polymap.core.catalog.resolve.IMetadataResourceResolver;
 import org.polymap.core.catalog.resolve.IResourceInfo;
 import org.polymap.core.catalog.ui.MetadataContentProvider;
 import org.polymap.core.catalog.ui.MetadataLabelProvider;
 import org.polymap.core.project.ILayer;
+import org.polymap.core.project.IMap;
 import org.polymap.core.runtime.UIJob;
 import org.polymap.core.runtime.UIThreadExecutor;
 import org.polymap.core.runtime.i18n.IMessages;
 import org.polymap.core.ui.FormDataFactory;
 import org.polymap.core.ui.FormLayoutFactory;
 import org.polymap.core.ui.SelectionAdapter;
+import org.polymap.core.ui.StatusDispatcher;
 import org.polymap.core.ui.UIUtils;
 
 import org.polymap.rhei.batik.Context;
 import org.polymap.rhei.batik.PanelIdentifier;
 import org.polymap.rhei.batik.Scope;
+import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
 import org.polymap.rhei.batik.help.HelpAwarePanel;
+import org.polymap.rhei.batik.toolkit.ActionText;
+import org.polymap.rhei.batik.toolkit.ClearTextAction;
 import org.polymap.rhei.batik.toolkit.DefaultToolkit;
+import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
+import org.polymap.rhei.batik.toolkit.TextActionItem;
+import org.polymap.rhei.batik.toolkit.TextActionItem.Type;
+import org.polymap.rhei.batik.toolkit.md.ActionProvider;
 import org.polymap.rhei.batik.toolkit.md.MdListViewer;
 import org.polymap.rhei.batik.toolkit.md.TreeExpandStateDecorator;
 
@@ -59,7 +73,6 @@ import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
 import org.polymap.p4.catalog.MetadataIconProvider;
-import org.polymap.p4.catalog.MetadataInfoPanel;
 import org.polymap.p4.catalog.ResourceInfoPanel;
 import org.polymap.p4.map.ProjectMapPanel;
 
@@ -80,6 +93,10 @@ public class LayersCatalogsPanel
 
     private static final String         MEMENTO_WEIGHTS = "sashWeights";
     
+    /** Inbound: */
+    @Scope( P4Plugin.Scope )
+    private Context<IMap>       map;
+    
     /** Outbound: */
     @Scope( P4Plugin.Scope )
     private Context<IResourceInfo> selectedResource;
@@ -96,7 +113,7 @@ public class LayersCatalogsPanel
 
     private LayersPanel         layersPanel;
 
-    private MdListViewer        catalogsViewer;
+    private MdListViewer        catalogsList;
 
     
     @Override
@@ -175,39 +192,68 @@ public class LayersCatalogsPanel
         // title
         Label sectionTitle = tk().createLabel( catalogsParent, "Data sources" );
         UIUtils.setVariant( sectionTitle, DefaultToolkit.CSS_SECTION_TITLE  );
-        FormDataFactory.on( sectionTitle ).fill().noBottom();
 
         // tree/list viewer
-        catalogsViewer = tk().createListViewer( catalogsParent, SWT.VIRTUAL, SWT.FULL_SELECTION, SWT.SINGLE );
-        FormDataFactory.on( catalogsViewer.getTree() ).fill().top( sectionTitle );
-        catalogsViewer.linesVisible.set( true );
-        catalogsViewer.setContentProvider( new MetadataContentProvider( P4Plugin.allResolver() ) );
-        catalogsViewer.firstLineLabelProvider.set( new TreeExpandStateDecorator( catalogsViewer, 
-                new MetadataLabelProvider() ) );
-        catalogsViewer.iconProvider.set( new MetadataIconProvider() );
-       // catalogsViewer.firstSecondaryActionProvider.set( new CreateLayerAction() );
-        catalogsViewer.setInput( P4Plugin.catalogs() );
+        catalogsList = tk().createListViewer( catalogsParent, SWT.VIRTUAL, SWT.FULL_SELECTION, SWT.SINGLE );
+        catalogsList.linesVisible.set( true );
+        catalogsList.setContentProvider( new XMetadataContentProvider( P4Plugin.allResolver() ) );
+        catalogsList.firstLineLabelProvider.set( new TreeExpandStateDecorator( catalogsList, new MetadataLabelProvider() )
+                .luminanceDelta.put( -3f ).saturationDelta.put( 0f ) );
+        catalogsList.iconProvider.set( new MetadataIconProvider() );
+        catalogsList.firstSecondaryActionProvider.set( new ChevronOpenAction() );
+        catalogsList.secondSecondaryActionProvider.set( new CreateLayerAction() );
+        catalogsList.setInput( P4Plugin.catalogs() );
 
-        catalogsViewer.addOpenListener( ev -> {
+        catalogsList.addOpenListener( ev -> {
             SelectionAdapter.on( ev.getSelection() ).forEach( elm -> {
                 //catalogsViewer.setSelection( new StructuredSelection() );
-                catalogsViewer.collapseAllNotInPathOf( elm );
-                catalogsViewer.toggleItemExpand( elm );
+                catalogsList.collapseAllNotInPathOf( elm );
+                catalogsList.toggleItemExpand( elm );
 
                 if (elm instanceof IResourceInfo) {
-                    onResourceOpen( (IResourceInfo)elm );
-                }
-                if (elm instanceof IMetadata) {
-                    selectedMetadata.set( (IMetadata)elm );
-                    getContext().openPanel( getSite().getPath(), MetadataInfoPanel.ID );                        
-                }
-                else if (elm instanceof IResourceInfo) {
                     selectedResource.set( (IResourceInfo)elm );
                     getContext().openPanel( getSite().getPath(), ResourceInfoPanel.ID );                        
+                    onResourceOpen( (IResourceInfo)elm );
                 }
+//                if (elm instanceof IMetadata) {
+//                    selectedMetadata.set( (IMetadata)elm );
+//                    getContext().openPanel( getSite().getPath(), MetadataInfoPanel.ID );                        
+//                }
+//                else if (elm instanceof IResourceInfo) {
+//                }
             });
         });
+        
+        ActionText search = tk().createActionText( catalogsParent, "" );
+        search.getText().setEnabled( false );
+        new TextActionItem( search, Type.DEFAULT )
+                .action.put( ev -> doSearch( search.getText().getText() ) )
+                .text.put( "Search..." )
+                .tooltip.put( "Fulltext search. Use * as wildcard.<br/>&lt;ENTER&gt; starts the search." )
+                .icon.put( P4Plugin.images().svgImage( "magnify.svg", SvgImageRegistryHelper.DISABLED12 ) );
+        new ClearTextAction( search );
+
+        // layout
+        FormDataFactory.on( sectionTitle ).fill().noBottom();
+        FormDataFactory.on( search.getControl() ).fill().top( sectionTitle ).noBottom();
+        FormDataFactory.on( catalogsList.getTree() ).fill().top( search.getControl() );
     }
+
+
+    protected void doSearch( String query ) {
+        log.info( "doSearch(): ..." );
+        
+        MetadataContentProvider cp = (MetadataContentProvider)catalogsList.getContentProvider();
+        cp.catalogQuery.set( query );
+        cp.flush();
+        
+        // otherwise preserveSelection() fails because of no getParent()
+        catalogsList.setSelection( new StructuredSelection() );
+        catalogsList.setInput( P4Plugin.catalogs() );
+        catalogsList.expandToLevel( 2 );
+    }
+
+    
 
 
     protected void onLayerOpen( ILayer layer ) {
@@ -217,12 +263,12 @@ public class LayersCatalogsPanel
                 IResourceInfo resInfo = AllResolver.instance().resInfo( layer, monitor )
                         .orElseThrow( () -> new IllegalStateException( "No resource found for layer: " + layer ) );
 
-                MetadataContentProvider provider = (MetadataContentProvider)catalogsViewer.getContentProvider();
+                MetadataContentProvider provider = (MetadataContentProvider)catalogsList.getContentProvider();
                 TreePath treePath = provider.treePathOf( resInfo );
 
                 UIThreadExecutor.async( () -> {
-                    catalogsViewer.setSelection( new StructuredSelection() );
-                    catalogsViewer.collapseAll();
+                    catalogsList.setSelection( new StructuredSelection() );
+                    catalogsList.collapseAll();
                 });
                 
                 Thread.sleep( 2000 );  // let the child panel open up
@@ -230,7 +276,7 @@ public class LayersCatalogsPanel
                     Object segment = treePath.getSegment( i );
                     UIThreadExecutor.async( () -> {
                         log.debug( "expanding: " + segment.getClass().getSimpleName() );
-                        catalogsViewer.expandToLevel( segment, 1 );
+                        catalogsList.expandToLevel( segment, 1 );
                     });
                     log.debug( "waiting for: " + segment.getClass().getSimpleName() );
                     Thread.sleep( 1000 );  // FIXME
@@ -240,9 +286,9 @@ public class LayersCatalogsPanel
 //                    }
                 }
                 UIThreadExecutor.async( () -> {
-                    catalogsViewer.setSelection( new StructuredSelection( resInfo ), true );
-                    catalogsViewer.reveal( resInfo );
-                    catalogsViewer.getTree().showSelection();
+                    catalogsList.setSelection( new StructuredSelection( resInfo ), true );
+                    catalogsList.reveal( resInfo );
+                    catalogsList.getTree().showSelection();
                 });
             }
         }.scheduleWithUIUpdate();
@@ -260,6 +306,93 @@ public class LayersCatalogsPanel
         MdListViewer viewer = layersPanel.getViewer();
         viewer.setSelection( new StructuredSelection( layers ) );
         viewer.getTree().showSelection();
+    }
+    
+    
+    /**
+     * No catalogs level, show services at top level. 
+     */
+    protected class XMetadataContentProvider
+            extends MetadataContentProvider {
+
+        public XMetadataContentProvider( IMetadataResourceResolver resolver ) {
+            super( resolver );
+        }
+
+        @Override
+        protected void updateMetadataCatalogs( Collection<IMetadataCatalog> elm, int currentChildCount ) {
+            updateChildrenLoading( elm );
+            UIJob job = new UIJob( "Query catalogs" ) {
+                @Override
+                protected void runWithException( IProgressMonitor monitor ) throws Exception {
+                    List children = new ArrayList( 32 );
+                    for (IMetadataCatalog catalog : elm) {
+                        try {
+                            catalog.query( catalogQuery.get(), monitor )
+                                    .maxResults.put( maxResults.get() )
+                                    .execute().stream()
+                                    .forEach( child -> children.add( child ) );
+                        }
+                        catch (Exception e) {
+                            log.warn( e );
+                        }
+                    }
+                    updateChildren( elm, children.toArray(), currentChildCount );
+                }
+            };
+            job.scheduleWithUIUpdate();
+        }
+    }
+    
+
+    /**
+     * 
+     */
+    protected class CreateLayerAction
+            extends ActionProvider {
+
+        @Override
+        public void update( ViewerCell cell ) {
+            Object elm = cell.getElement();
+            if (elm instanceof IResourceInfo) {
+                cell.setImage( P4Plugin.images().svgImage( "plus-circle.svg", SvgImageRegistryHelper.OK24 ) );
+            }
+        }
+
+        @Override
+        public void perform( MdListViewer viewer, Object elm ) {
+            IResourceInfo res = (IResourceInfo)elm;
+            NewLayerContribution.createLayer( res, map.get(), ev -> {
+                if (ev.getResult().isOK()) {
+                    //BatikApplication.instance().getContext().closePanel( site().path() );
+                    tk().createSnackbar( Appearance.FadeIn, "Layer has been created" );
+                }
+                else {
+                    StatusDispatcher.handleError( "Unable to create new layer.", ev.getResult().getException() );
+                }
+            });
+        }    
+    }
+
+
+    /**
+     * 
+     */
+    protected class ChevronOpenAction
+            extends ActionProvider {
+        
+        @Override 
+        public void update( ViewerCell cell ) {
+            if (cell.getElement() instanceof IResourceInfo) {
+                cell.setImage( P4Plugin.images().svgImage( "chevron-right.svg", SvgImageRegistryHelper.NORMAL24 ) );
+            }
+        }
+        
+        @Override 
+        public void perform( MdListViewer viewer, Object elm ) {
+            selectedResource.set( (IResourceInfo)elm );
+            getContext().openPanel( getSite().getPath(), ResourceInfoPanel.ID );                        
+        }
     }
     
 }

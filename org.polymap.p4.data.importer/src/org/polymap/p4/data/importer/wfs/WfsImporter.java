@@ -282,12 +282,13 @@ public class WfsImporter
                     //.markdown( "\n\nClick on \"Overview\" to preview data." );
             tk.createFlowText( content, md.toString() );
         }
-        catch (IOException e) {
+        catch (Throwable e) {
             UIUtils.disposeChildren( parent );
             log.warn( "", e );
-            tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + e.getMessage() );
-            site.ok.set( false );
-            exception = e;
+            tk.createFlowText( parent, "\nUnable to read description from server.\n\n**Reason**: " + e.getMessage() );
+            // don't break entire import
+//            site.ok.set( false );
+//            exception = e;
         }
     }
     
@@ -319,13 +320,21 @@ public class WfsImporter
     @Override
     public void execute( IProgressMonitor monitor ) throws Exception {
         // create catalog entry
-        try (Updater update = P4Plugin.localCatalog().prepareUpdate()) {
+        try (
+            Updater update = P4Plugin.localCatalog().prepareUpdate()
+        ) {
             WFSServiceInfo serviceInfo = ds.getInfo();
             update.newEntry( metadata -> {
-                metadata.setTitle( serviceInfo.getTitle() );
-                metadata.setDescription( normalize( serviceInfo.getDescription() ) );
-                metadata.setType( "Service" );
-                metadata.setFormats( Sets.newHashSet( "WFS" ) );
+                try {
+                    metadata.setType( "Service" );
+                    metadata.setFormats( Sets.newHashSet( "WFS" ) );
+                    metadata.setTitle( serviceInfo.getTitle() );
+                    metadata.setDescription( normalize( serviceInfo.getDescription() ) );
+                }
+                catch (Exception e) {
+                    // geotools wfs-ng is buggy, for WFS 2.0 it throws ClassCastException in getDescription()
+                    log.warn( "Exception while creating catalog entry", e );
+                }
 
                 if (serviceInfo.getKeywords() != null) {
                     metadata.setKeywords( Sets.newHashSet( serviceInfo.getKeywords() ) );

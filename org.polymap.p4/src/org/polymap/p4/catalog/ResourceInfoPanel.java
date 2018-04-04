@@ -102,12 +102,13 @@ public class ResourceInfoPanel
         site().setSize( SIDE_PANEL_WIDTH, SIDE_PANEL_WIDTH, SIDE_PANEL_WIDTH2 );
         ContributionManager.instance().contributeTo( this, this );
         
-        dashboard = new Dashboard( getSite(), DASHBOARD_ID );
+        dashboard = new Dashboard( getSite(), DASHBOARD_ID ).defaultExpandable.put( true );
         dashboard.addDashlet( new ResourceInfoDashlet( res.get() )
                 .addConstraint( new PriorityConstraint( 100 ) ) );
         dashboard.addDashlet( new PreviewMapDashlet( res.get() )
+                .addConstraint( new PriorityConstraint( 10 ) ) );
+        dashboard.addDashlet( new PreviewFeaturesDashlet( res.get() )
                 .addConstraint( new PriorityConstraint( 0 ) ) );
-        //dashboard.addDashlet( new PreviewFeaturesDashlet() );
         dashboard.createContents( parent );
         ContributionManager.instance().contributeTo( dashboard, this );
     }
