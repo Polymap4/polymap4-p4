@@ -62,7 +62,7 @@ public class LayerStyleDashlet
 
     private PanelSite                   panelSite;
     
-    private StyleEditor                 editor;
+    private volatile StyleEditor        editor;
     
     
     public LayerStyleDashlet( PanelSite panelSite ) {
@@ -148,7 +148,9 @@ public class LayerStyleDashlet
         // RasterLayer?
         RasterLayer.of( layer.get() ).thenAccept( rl -> {
             UIThreadExecutor.async( () -> {
-                if (rl.isPresent()) {
+                // for special cases (e.g. Raster2Feature processor) both, RasterLayer
+                // *and* FeatureLayer are existing for a given ILayer
+                if (rl.isPresent() && editor==null) {
                     UIUtils.disposeChildren( parent );
                     try {
                         RasterStyleEditorInput editorInput = new RasterStyleEditorInput();
