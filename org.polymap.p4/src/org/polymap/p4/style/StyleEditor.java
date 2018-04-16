@@ -109,9 +109,9 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
 
     protected MdToolkit                 tk;
 
-    private DragSource dragSource;
+    private DragSource                  dragSource;
 
-    private DropTarget dropTarget;
+    private DropTarget                  dropTarget;
     
 
     public StyleEditor( I editorInput ) {
@@ -322,21 +322,22 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
             
             // StyleComposite
             else if (StyleComposite.class.isAssignableFrom( propInfo.getType() )) {
-                Section section = tk.createSection( parent, 
-                        i18nField.get( propInfo.getDescription().orElse( propInfo.getName() ) ), 
-                        ExpandableComposite.TWISTIE, Section.SHORT_TITLE_BAR, Section.FOCUS_TITLE, SWT.BORDER );
-                section.setToolTipText( i18nField.get( propInfo.getDescription().orElse( propInfo.getName() ) + "Tooltip" ) );
-                section.setExpanded( false );                
+                StyleComposite styleComposite = ((Property<StyleComposite>)propInfo.get( style )).get();
+                if (styleComposite != null) {
+                    Section section = tk.createSection( parent, 
+                            i18nField.get( propInfo.getDescription().orElse( propInfo.getName() ) ), 
+                            ExpandableComposite.TWISTIE, Section.SHORT_TITLE_BAR, Section.FOCUS_TITLE, SWT.BORDER );
+                    section.setToolTipText( i18nField.get( propInfo.getDescription().orElse( propInfo.getName() ) + "Tooltip" ) );
+                    section.setExpanded( false );                
 
-                section.setBackground( new HSLColor( parent.getBackground() )
-                        .adjustSaturation( -10f ).adjustLuminance( -4f ).toSWT() );
-                
-                ((Composite)section.getClient()).setLayout( ColumnLayoutFactory.defaults()
-                        .columns( 1, 1 ).margins( 0, 0, 5, 0 ).spacing( 5 ).create() );
+                    section.setBackground( new HSLColor( parent.getBackground() )
+                            .adjustSaturation( -10f ).adjustLuminance( -4f ).toSWT() );
 
-                createEditorFields( 
-                        (Composite)section.getClient(), 
-                        ((Property<StyleComposite>)propInfo.get( style )).get(), level + 1 );
+                    ((Composite)section.getClient()).setLayout( ColumnLayoutFactory.defaults()
+                            .columns( 1, 1 ).margins( 0, 0, 5, 0 ).spacing( 5 ).create() );
+
+                    createEditorFields( (Composite)section.getClient(), styleComposite , level + 1 );
+                }
             }
         }
     }

@@ -17,6 +17,7 @@ package org.polymap.p4.style;
 import org.eclipse.swt.widgets.Composite;
 import org.polymap.core.style.DefaultStyle;
 import org.polymap.core.style.model.StylePropertyValue;
+import org.polymap.core.style.model.feature.ShadowStyle;
 import org.polymap.core.style.ui.StylePropertyFieldSite;
 import org.polymap.rhei.batik.toolkit.ActionItem;
 import org.polymap.rhei.batik.toolkit.ItemContainer;
@@ -46,6 +47,7 @@ public abstract class FeatureStyleEditor
         new AddPointItem( toolbar );
         new AddPolygonItem( toolbar );
         new AddLineItem( toolbar );
+        new AddShadowItem( toolbar );
     }
     
     
@@ -53,6 +55,7 @@ public abstract class FeatureStyleEditor
     protected StylePropertyFieldSite createFieldSite( Property<StylePropertyValue> prop ) {
         StylePropertyFieldSite fieldSite = new StylePropertyFieldSite();
         fieldSite.prop.set( prop );
+        fieldSite.mapStyle.set( featureStyle );
         fieldSite.featureStore.set( editorInput.featureStore.get() );
         fieldSite.featureType.set( editorInput.featureType.get() );
         fieldSite.maxExtent = editorInput.maxExtent;
@@ -71,14 +74,13 @@ public abstract class FeatureStyleEditor
         public AddPointItem( ItemContainer container ) {
             super( container );
             icon.set( P4Plugin.images().svgImage( "map-marker.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
-            tooltip.set( "Create a new Point/Marker render description" );
+            tooltip.set( "Create a new <b>Point/Marker</b> style" );
             action.set( ev -> {
                 DefaultStyle.fillPointStyle( featureStyle );
                 list.refresh( true );
             });
         }
     }
-
     
     /**
      * 
@@ -89,14 +91,13 @@ public abstract class FeatureStyleEditor
         public AddPolygonItem( ItemContainer container ) {
             super( container );
             icon.set( P4Plugin.images().svgImage( "vector-polygon.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
-            tooltip.set( "Create a new Polygon render description" );
+            tooltip.set( "Create a new <b>Polygon</b> style" );
             action.set( ev -> {
                 DefaultStyle.fillPolygonStyle( featureStyle );
                 list.refresh( true );
             } );
         }
     }
-
 
     /**
      * 
@@ -107,14 +108,13 @@ public abstract class FeatureStyleEditor
         public AddLineItem( ItemContainer container ) {
             super( container );
             icon.set( P4Plugin.images().svgImage( "vector-polyline.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
-            tooltip.set( "Create a new Line render description" );
+            tooltip.set( "Create a new <b>Line</b> style" );
             action.set( ev -> {
                 DefaultStyle.fillLineStyle( featureStyle );
                 list.refresh( true );
             } );
         }
     }
-
 
     /**
      * 
@@ -126,9 +126,27 @@ public abstract class FeatureStyleEditor
             super( container );
             // XXX we need a text icon here
             icon.set( P4Plugin.images().svgImage( "format-title.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
-            tooltip.set( "Create a new Text render description" );
+            tooltip.set( "Create a new <b>Text</b> style" );
             action.set( ev -> {
                 DefaultStyle.fillTextStyle( featureStyle, editorInput.featureType.get() );
+                list.refresh( true );
+            });
+        }
+    }
+
+    /**
+     * 
+     */
+    protected class AddShadowItem
+            extends ActionItem {
+
+        public AddShadowItem( ItemContainer container ) {
+            super( container );
+            icon.set( P4Plugin.images().svgImage( "box-shadow.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
+            tooltip.set( "Create a new <b>Shadow</b> style<br/>Works for Text and Point/Mark only yet" );
+            action.set( ev -> {
+                ShadowStyle shadowStyle = DefaultStyle.fillShadowStyle( featureStyle, editorInput.featureType.get() );
+                shadowStyle.zPriority.set( shadowStyle.minZPriority() - 1 );
                 list.refresh( true );
             });
         }

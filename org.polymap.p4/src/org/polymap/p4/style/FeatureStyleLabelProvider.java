@@ -14,9 +14,6 @@
  */
 package org.polymap.p4.style;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.ViewerCell;
 
@@ -26,11 +23,13 @@ import org.polymap.core.style.model.StyleGroup;
 import org.polymap.core.style.model.feature.LineStyle;
 import org.polymap.core.style.model.feature.PointStyle;
 import org.polymap.core.style.model.feature.PolygonStyle;
+import org.polymap.core.style.model.feature.ShadowStyle;
 import org.polymap.core.style.model.feature.TextStyle;
 import org.polymap.core.style.model.raster.RasterColorMapStyle;
 import org.polymap.core.style.model.raster.RasterGrayStyle;
 import org.polymap.core.style.model.raster.RasterRGBStyle;
 
+import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
 import org.polymap.rhei.batik.toolkit.md.MdToolkit;
 
 import org.polymap.p4.P4Plugin;
@@ -42,8 +41,6 @@ import org.polymap.p4.P4Plugin;
  */
 public class FeatureStyleLabelProvider
         extends CellLabelProvider {
-
-    private static Log log = LogFactory.getLog( FeatureStyleLabelProvider.class );
 
     private MdToolkit           tk;
 
@@ -70,24 +67,28 @@ public class FeatureStyleLabelProvider
         // Style images
         if (elm instanceof StyleGroup) {
             cell.setText( title != null ? title : "Group" );
-            cell.setImage( P4Plugin.images().svgImage( "buffer.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
+            cell.setImage( P4Plugin.images().svgImage( "buffer.svg", SvgImageRegistryHelper.NORMAL12 ) );
         }
         else if (elm instanceof PolygonStyle) {
             cell.setText( title != null ? title : "Polygon" );
-            cell.setImage( P4Plugin.images().svgImage( "vector-polygon.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );            
+            cell.setImage( P4Plugin.images().svgImage( "vector-polygon.svg", SvgImageRegistryHelper.NORMAL12 ) );            
         }
         else if (elm instanceof PointStyle) {
             cell.setText( title != null ? title : "Point/Mark" );
-            cell.setImage( P4Plugin.images().svgImage( "map-marker.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
+            cell.setImage( P4Plugin.images().svgImage( "map-marker.svg", SvgImageRegistryHelper.NORMAL12 ) );
         }
         else if (elm instanceof TextStyle) {
             cell.setText( title != null ? title : "Text" );
             // XXX we need a text icon here
-            cell.setImage( P4Plugin.images().svgImage( "format-title.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
+            cell.setImage( P4Plugin.images().svgImage( "format-title.svg", SvgImageRegistryHelper.NORMAL12 ) );
         }
         else if (cell.getElement() instanceof LineStyle) {
             cell.setText( title != null ? title : "Line" );
-            cell.setImage( P4Plugin.images().svgImage( "vector-polyline.svg", P4Plugin.TOOLBAR_ICON_CONFIG ) );
+            cell.setImage( P4Plugin.images().svgImage( "vector-polyline.svg", SvgImageRegistryHelper.NORMAL12 ) );
+        }
+        else if (cell.getElement() instanceof ShadowStyle) {
+            cell.setText( title != null ? title : "Shadow" );
+            cell.setImage( P4Plugin.images().svgImage( "box-shadow.svg", SvgImageRegistryHelper.NORMAL12 ) );
         }
         else if (cell.getElement() instanceof RasterGrayStyle) {
             cell.setText( title != null ? title : "Grayscale" );
