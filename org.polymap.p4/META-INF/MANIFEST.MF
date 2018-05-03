@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Polymap4 GIS application
 Bundle-SymbolicName: org.polymap.p4;singleton:=true
-Bundle-Version: 1.0.2.qualifier
+Bundle-Version: 1.0.3.qualifier
 Bundle-Activator: org.polymap.p4.P4Plugin
 Bundle-Vendor: polymap.org
 Require-Bundle: org.eclipse.osgi.services;visibility:=reexport,

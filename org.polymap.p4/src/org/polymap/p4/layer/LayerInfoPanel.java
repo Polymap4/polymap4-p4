@@ -108,13 +108,14 @@ public class LayerInfoPanel
         dashboard.addDashlet( new LayerInfoDashlet( layer.get() )
                 .addConstraint( new PriorityConstraint( 100 ) ) );
         dashboard.addDashlet( new LayerStyleDashlet( site() )
-                .addConstraint( new PriorityConstraint( 10 ) ).setExpanded( false ) );
+                .addConstraint( new PriorityConstraint( 30 ) ).setExpanded( false ) );
         dashboard.addDashlet( new LayerProcessorsDashlet()
-                .addConstraint( new PriorityConstraint( 9 ) ).setExpanded( false ) );
+                .addConstraint( new PriorityConstraint( 20 ) ).setExpanded( false ) );
         dashboard.addDashlet( new ProcessDashlet( site() )
-                .addConstraint( new PriorityConstraint( 5 ) ).setExpanded( false ) );
+                .addConstraint( new PriorityConstraint( 10 ) ).setExpanded( false ) );
         dashboard.addDashlet( new DeleteLayerDashlet()
                 .addConstraint( new PriorityConstraint( 0 ) ).setExpanded( false ) );
+        ContributionManager.instance().contributeTo( dashboard, this, DASHBOARD_ID );
         
         dashboard.createContents( parent );
         EventManager.instance().subscribe( this, ifType( ExpansionEvent.class, ev -> 
