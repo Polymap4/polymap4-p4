@@ -21,6 +21,8 @@ import static org.polymap.core.ui.SelectionAdapter.on;
 import static org.polymap.core.ui.UIUtils.selectionListener;
 import static org.polymap.rhei.batik.app.SvgImageRegistryHelper.DISABLED12;
 
+import java.util.Optional;
+
 import java.io.IOException;
 
 import org.geotools.data.FeatureEvent;
@@ -162,7 +164,7 @@ public abstract class FeatureSelectionTable {
         viewer.setContentProvider( contentProvider );
     
         // add columns
-        DefaultFeatureTableColumn first = null;
+        Optional<DefaultFeatureTableColumn> first = Optional.empty();
         for (PropertyDescriptor prop : fs.getSchema().getDescriptors()) {
             if (Geometry.class.isAssignableFrom( prop.getType().getBinding() )) {
                 // skip Geometry
@@ -172,7 +174,7 @@ public abstract class FeatureSelectionTable {
                 // disable default sorting behaviour
                 //column.setSortable( false );
                 viewer.addColumn( column );
-                first = first != null ? first : column;
+                first = first.isPresent() ? first : Optional.of( column );
                 
 //                column.getViewerColumn().getColumn().addSelectionListener( new SelectionAdapter() {
 //                    private SortOrder currentOrder = SortOrder.ASCENDING;
@@ -189,7 +191,7 @@ public abstract class FeatureSelectionTable {
         
         // it is important to sort any column; otherwise preserving selection during refresh()
         // always selects a new element, which causes an event, which causes a refresh() ...
-        first.sort( SWT.UP );
+        first.ifPresent( column -> column.sort( SWT.UP ) );
         
         //
         viewer.setInput( fs );
