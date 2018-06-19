@@ -24,7 +24,6 @@ import org.geotools.data.FeatureStore;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.json.JSONArray;
 import org.opengis.feature.Feature;
 import org.opengis.filter.Filter;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -203,8 +202,8 @@ public class ProjectMapPanel
             mapViewer.mapExtent.set( maxExtent );
 
             //
-            OlMap olmap = mapViewer.getMap();
-            olmap.addEventListener( Event.click, this );
+            OlMap olmap = mapViewer.map();
+            olmap.addEventListener( Event.CLICK, this, new OlMap.ClickEventPayload() );
         }
         catch (Exception e) {
             throw new RuntimeException( e );
@@ -216,18 +215,19 @@ public class ProjectMapPanel
     
     @Override
     public void handleEvent( OlEvent ev ) {
-        log.info( "event: " + ev.properties() );
-        JSONArray coord = ev.properties().getJSONObject( "feature" ).getJSONArray( "coordinate" );
-        double x = coord.getDouble( 0 );
-        double y = coord.getDouble( 1 );
+        log.info( "OlEvent: " + ev.properties() );
         
         if (featureLayer.isPresent()) {
-            try {
-                clickFeature( featureLayer.get().featureSource(), new Coordinate( x, y ) );
-            }
-            catch (Exception e) {
-                StatusDispatcher.handleError( "Unable to select feature.", e );
-            }
+            OlMap.ClickEventPayload.findIn( ev ).ifPresent( payload -> {
+                log.info( "   Coordinate: " + ev.properties() );
+                try {
+                    org.polymap.rap.openlayers.types.Coordinate coord = payload.coordinate();
+                    clickFeature( featureLayer.get().featureSource(), new Coordinate( coord.x(), coord.y() ) );
+                }
+                catch (Exception e) {
+                    StatusDispatcher.handleError( "Unable to select feature.", e );
+                }
+            });
         }
         else {
             tk().createSnackbar( Appearance.FadeIn, "No layer choosen to be <em>selectable</em>", new ActionItem( null )

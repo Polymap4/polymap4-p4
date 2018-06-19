@@ -14,9 +14,6 @@
  */
 package org.polymap.p4.process;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -24,7 +21,10 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 import org.eclipse.swt.widgets.Composite;
 
+import org.polymap.core.runtime.event.EventHandler;
+
 import org.polymap.rap.openlayers.base.OlEvent;
+import org.polymap.rap.openlayers.base.OlMap;
 import org.polymap.rap.openlayers.base.OlMap.Event;
 
 /**
@@ -41,21 +41,15 @@ public abstract class ClickMapViewer
     public ClickMapViewer( Composite parent ) {
         super( parent );
 
-        getMap().addEventListener( Event.click, this );
+        getMap().addEventListener( Event.CLICK, this, new OlMap.ClickEventPayload() );
     }
 
     
-    @Override
-    public void handleEvent( OlEvent ev ) {
-        log.info( "event: " + ev.properties() );
-        JSONObject feature = ev.properties().optJSONObject( "feature" );
-        if (feature != null) {
-            JSONArray json = feature.getJSONArray( "coordinate" );
-            double x = json.getDouble( 0 );
-            double y = json.getDouble( 1 );
-            Coordinate coord = new Coordinate( x, y );
-            onClick( coord );
-        }
+    @EventHandler( display=true )
+    protected void handleEvent( OlEvent ev ) {
+        OlMap.ClickEventPayload.findIn( ev ).ifPresent( payload -> {
+            onClick( new Coordinate( payload.coordinate().x, payload.coordinate().y ) );
+        });
     }
     
 

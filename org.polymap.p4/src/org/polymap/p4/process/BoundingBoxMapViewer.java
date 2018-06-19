@@ -22,8 +22,10 @@ import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.swt.widgets.Composite;
 
+import org.polymap.core.runtime.event.EventHandler;
+
 import org.polymap.rap.openlayers.base.OlEvent;
-import org.polymap.rap.openlayers.base.OlMap.Event;
+import org.polymap.rap.openlayers.view.View;
 
 /**
  * 
@@ -43,11 +45,12 @@ public abstract class BoundingBoxMapViewer
                 mapExtent.set( bounds );
             });
         }
-        getMap().addEventListener( Event.click, this );
+        // XXX
+        getMap().addEventListener( View.Event.CENTER, this, new View.ExtentEventPayload() );
     }
 
     
-    @Override
+    @EventHandler( display=true )
     public void handleEvent( OlEvent ev ) {
         log.info( "event: " + ev.properties() );
         JSONArray extent = ev.properties().optJSONArray( "extent" );
