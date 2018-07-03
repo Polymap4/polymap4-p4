@@ -60,7 +60,8 @@ import org.polymap.p4.data.P4PipelineBuilder;
 /**
  * Carries the {@link FeatureSource}, the {@link #filter()}ed features and the
  * {@link #clicked()} feature for layers which are connected to a {@link DataStore}.
- * There is one instance per layer per session, retrieved via {@link #of(ILayer)}.
+ * There is one instance per layer per session. This instance is retrieved via
+ * {@link #of(ILayer)}.
  * <p/>
  * The currently <b>active</b> layer and its selection is stored in
  * {@link P4Panel#featureSelection()}.

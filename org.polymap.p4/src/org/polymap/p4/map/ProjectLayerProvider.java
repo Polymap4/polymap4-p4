@@ -141,13 +141,14 @@ public class ProjectLayerProvider
     /**
      * Builds a single-tile layer
      */
-    protected Layer buildLayer( String layerName ) {
+    protected Layer buildLayer( String layerName, String styleHash ) {
         return new ImageLayer()
                  .source.put( new ImageWMSSource()
                          .url.put( "." + alias )
                          .params.put( new WMSRequestParams()
                                  .version.put( "1.1.1" )  // send "SRS" param
                                  .layers.put( layerName )
+                                 .styles.put( styleHash )
                                  .format.put( "image/png" ) ) );
     }
     
