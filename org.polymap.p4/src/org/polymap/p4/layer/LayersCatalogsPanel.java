@@ -35,7 +35,10 @@ import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.ViewerCell;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
+import org.polymap.core.CorePlugin;
 import org.polymap.core.catalog.IMetadata;
 import org.polymap.core.catalog.IMetadataCatalog;
 import org.polymap.core.catalog.resolve.IMetadataResourceResolver;
@@ -51,6 +54,7 @@ import org.polymap.core.ui.FormDataFactory;
 import org.polymap.core.ui.FormLayoutFactory;
 import org.polymap.core.ui.SelectionAdapter;
 import org.polymap.core.ui.StatusDispatcher;
+import org.polymap.core.ui.StatusDispatcher.Style;
 import org.polymap.core.ui.UIUtils;
 
 import org.polymap.rhei.batik.Context;
@@ -224,11 +228,10 @@ public class LayersCatalogsPanel
             });
         });
         
-        ActionText search = tk().createActionText( catalogsParent, "" );
-        search.getText().setEnabled( false );
+        ActionText search = tk().createActionText( catalogsParent, "" )
+                .textHint.put( "Search..." );
         new TextActionItem( search, Type.DEFAULT )
                 .action.put( ev -> doSearch( search.getText().getText() ) )
-                .text.put( "Search..." )
                 .tooltip.put( "Fulltext search. Use * as wildcard.<br/>&lt;ENTER&gt; starts the search." )
                 .icon.put( P4Plugin.images().svgImage( "magnify.svg", SvgImageRegistryHelper.DISABLED12 ) );
         new ClearTextAction( search );
@@ -241,16 +244,17 @@ public class LayersCatalogsPanel
 
 
     protected void doSearch( String query ) {
-        log.info( "doSearch(): ..." );
+        StatusDispatcher.handle( new Status( IStatus.INFO, CorePlugin.PLUGIN_ID, 
+                "Sorry, searching the catalog is not yet enabled. Do you need it?" ), Style.SHOW, Style.LOG );        
         
-        MetadataContentProvider cp = (MetadataContentProvider)catalogsList.getContentProvider();
-        cp.catalogQuery.set( query );
-        cp.flush();
-        
-        // otherwise preserveSelection() fails because of no getParent()
-        catalogsList.setSelection( new StructuredSelection() );
-        catalogsList.setInput( P4Plugin.catalogs() );
-        catalogsList.expandToLevel( 2 );
+//        MetadataContentProvider cp = (MetadataContentProvider)catalogsList.getContentProvider();
+//        cp.catalogQuery.set( query );
+//        cp.flush();
+//        
+//        // otherwise preserveSelection() fails because of no getParent()
+//        catalogsList.setSelection( new StructuredSelection() );
+//        catalogsList.setInput( P4Plugin.catalogs() );
+//        catalogsList.expandToLevel( 2 );
     }
 
     

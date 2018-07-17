@@ -242,10 +242,10 @@ public abstract class FeatureSelectionTable {
     protected void createTextSearch( Composite topbar ) {
         searchText = tk().createActionText( topbar, null, SWT.BORDER );
         searchText.performOnEnter.put( true );
+        searchText.textHint.put( "Search..." );
         
         new TextActionItem( searchText, TextActionItem.Type.DEFAULT )
                 .action.put( ev -> doSearch() )
-                .text.put( "Search..." )
                 .tooltip.put( "Search in all text properties. " +
                         "Allowed wildcards are: * and ?<br/>" +
                         "* is appended by default if no other wildcard is given" )

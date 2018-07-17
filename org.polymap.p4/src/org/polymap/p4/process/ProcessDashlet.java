@@ -129,10 +129,10 @@ public class ProcessDashlet
     
     protected void createSearchText( Composite parent ) {
         searchText = tk.createActionText( parent, "" )
-                .performOnEnter.put( false );
+                .performOnEnter.put( false )
+                .textHint.put( "Search..." );
         new TextActionItem( searchText, Type.DEFAULT )
                 .action.put( ev -> filterList( searchText.getTextText() ) )
-                .text.put( "Search..." )
                 .tooltip.put( "Search in name and description of the modules" )
                 .icon.put( BatikPlugin.images().svgImage( "magnify.svg", SvgImageRegistryHelper.DISABLED12 ) );
         new ClearTextAction( searchText );

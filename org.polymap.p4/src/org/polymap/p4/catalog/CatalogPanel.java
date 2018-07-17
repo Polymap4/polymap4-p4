@@ -134,10 +134,10 @@ public class CatalogPanel
         viewer.setInput( catalogs );
 
         // search field
-        ActionText search = tk().createActionText( parent, "" );
+        ActionText search = tk().createActionText( parent, "" )
+                .textHint.put( "Search..." );
         new TextActionItem( search, Type.DEFAULT )
                 .action.put( ev -> doSearch( search.getText().getText() ) )
-                .text.put( "Search..." )
                 .tooltip.put( "Fulltext search. Use * as wildcard.<br/>&lt;ENTER&gt; starts the search." )
                 .icon.put( P4Plugin.images().svgImage( "magnify.svg", SvgImageRegistryHelper.DISABLED12 ) );
         new ClearTextAction( search );
