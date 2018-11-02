@@ -20,7 +20,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.swt.widgets.Composite;
-
 import org.polymap.core.mapeditor.MapViewer;
 import org.polymap.core.project.ILayer;
 import org.polymap.core.project.IMap;
@@ -49,9 +48,9 @@ public class BaseMapViewer
         // XXX ???
         IMap map = ProjectRepository.unitOfWork().entity( IMap.class, ProjectRepository.ROOT_MAP_ID );
         
-        // triggers {@link MapViewer#refresh()} on {@link ProjectNodeCommittedEvent} 
+        // provider triggers {@link MapViewer#refresh()} on {@link ProjectNodeCommittedEvent} 
         contentProvider.set( new ProjectContentProvider() );
-        layerProvider.set( new ProjectLayerProvider() );
+        layerProvider.set( new ProjectLayerProvider( "/processmap" ) );
 
         ReferencedEnvelope mapMaxExtent = map.maxExtent();
         log.info( "maxExtent: " + mapMaxExtent );
@@ -69,4 +68,11 @@ public class BaseMapViewer
         });
     }
 
+
+    @Override
+    public void dispose() {
+        contentProvider.ifPresent( provider -> provider.dispose() );
+        layerProvider.ifPresent( provider -> ((ProjectLayerProvider)provider).dispose() );
+    }
+    
 }
