@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2015, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2015-2018, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.geotools.styling.Style;
+import org.osgi.service.http.NamespaceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,6 +38,7 @@ import org.polymap.core.mapeditor.ILayerProvider;
 import org.polymap.core.mapeditor.MapViewer;
 import org.polymap.core.mapeditor.services.SimpleWmsServer;
 import org.polymap.core.project.ILayer;
+import org.polymap.core.security.SecurityContext;
 
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
@@ -51,11 +53,13 @@ import org.polymap.rap.openlayers.source.WMSRequestParams;
 /**
  * Builds OpenLayers {@link Layer} objects for the {@link MapViewer} of the
  * {@link ProjectMapPanel} out of {@link ILayer} instances.
+ * <p/>
+ * Registers a {@link SimpleWmsServer} <b>servlet</b> with the given /alias.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class ProjectLayerProvider
-        implements ILayerProvider<ILayer>, AutoCloseable {
+        implements ILayerProvider<ILayer> {
 
     private static final Log log = LogFactory.getLog( ProjectLayerProvider.class );
 
@@ -66,7 +70,7 @@ public class ProjectLayerProvider
     protected Map<String,ILayer>        layers = new ConcurrentHashMap();
 
     
-    public ProjectLayerProvider() {
+    public ProjectLayerProvider( String servletAlias ) {
         try {
             // register WMS servlet
             wms = new SimpleWmsServer() {
@@ -79,8 +83,19 @@ public class ProjectLayerProvider
                     return ProjectLayerProvider.this.createPipeline( layerName );
                 }
             };
-            alias = "/mapviewer" + hashCode();
-            P4Plugin.instance().httpService().registerServlet( alias, wms , null, null );
+            // there is one servlet per instance; in order to make sure that the user
+            // sees its content (all recent changes) *and* make HTTP caches work -> the
+            // alias is persistent between sessions *and* specific for the user
+            int userHash = SecurityContext.instance().getUser().getName().hashCode();
+            alias = servletAlias + "-" + Integer.toHexString( userHash );
+            try {
+                P4Plugin.instance().httpService().registerServlet( alias, wms , null, null );
+            }
+            catch (NamespaceException e) {
+                log.warn( "Servlet already/still registered: " + alias );
+                P4Plugin.instance().httpService().unregister( alias );
+                P4Plugin.instance().httpService().registerServlet( alias, wms , null, null );
+            }
         }
         catch (Exception e) {
             throw new RuntimeException( e );
@@ -88,6 +103,14 @@ public class ProjectLayerProvider
     }
 
     
+    public void dispose() {
+        if (alias != null) {
+            P4Plugin.instance().httpService().unregister( alias );
+            alias = null;
+        }
+    }
+
+
     protected Pipeline createPipeline( String layerName ) {
         try {
             ILayer layer = layers.get( layerName );
@@ -169,21 +192,6 @@ public class ProjectLayerProvider
     @Override
     public int getPriority( ILayer elm ) {
         return elm.orderKey.get();
-    }
-
-
-    @Override
-    public void close() {
-        if (alias != null) {
-            P4Plugin.instance().httpService().unregister( alias );
-            alias = null;
-        }
-    }
-
-
-    @Override
-    protected void finalize() throws Throwable {
-        close();
     }
 
 }

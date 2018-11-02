@@ -135,6 +135,11 @@ public class ProjectMapPanel
     @Override
     public void dispose() {
         EventManager.instance().unsubscribe( this );
+        if (mapViewer != null) {
+            ((ProjectLayerProvider)mapViewer.layerProvider.get()).dispose();
+            ((ProjectContentProvider)mapViewer.layerProvider.get()).dispose();
+            mapViewer.dispose();
+        }
     }
 
     
@@ -185,7 +190,7 @@ public class ProjectMapPanel
             mainMapViewer.set( mapViewer );
             // triggers {@link MapViewer#refresh()} on {@link ProjectNodeCommittedEvent} 
             mapViewer.contentProvider.set( new ProjectContentProvider() );
-            mapViewer.layerProvider.set( new ProjectLayerProvider() );
+            mapViewer.layerProvider.set( new ProjectLayerProvider( "/p4mapviewer" ) );
             
             ReferencedEnvelope maxExtent = map.get().maxExtent();
             log.info( "maxExtent: " + maxExtent );

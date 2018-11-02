@@ -26,6 +26,7 @@ import org.geotools.feature.NameImpl;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.osgi.service.http.NamespaceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -296,9 +297,17 @@ public class PreviewMapDashlet
                 }
             }
         };
-        featureWmsAlias = "/preview" + hashCode();
-        P4Plugin.instance().httpService().registerServlet( featureWmsAlias, wms, null, null );
-        
+        // XXX specific for user? (see ProjectLayerProvider)
+        featureWmsAlias = "/prevmap";
+        try {
+            P4Plugin.instance().httpService().registerServlet( featureWmsAlias, wms, null, null );
+        }
+        catch (NamespaceException e) {
+            log.warn( "Servlet already/still registered: " + featureWmsAlias );
+            P4Plugin.instance().httpService().unregister( featureWmsAlias );
+            P4Plugin.instance().httpService().registerServlet( featureWmsAlias, wms , null, null );
+        }
+
         // layer
         String layerName = resInfo.getName();
         layers.add( new TileLayer()
