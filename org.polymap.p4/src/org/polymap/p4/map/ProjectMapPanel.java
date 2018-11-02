@@ -137,7 +137,7 @@ public class ProjectMapPanel
         EventManager.instance().unsubscribe( this );
         if (mapViewer != null) {
             ((ProjectLayerProvider)mapViewer.layerProvider.get()).dispose();
-            ((ProjectContentProvider)mapViewer.layerProvider.get()).dispose();
+            ((ProjectContentProvider)mapViewer.contentProvider.get()).dispose();
             mapViewer.dispose();
         }
     }
