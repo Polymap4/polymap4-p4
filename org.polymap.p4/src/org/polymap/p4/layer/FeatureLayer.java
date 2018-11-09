@@ -168,7 +168,7 @@ public class FeatureLayer {
             new UIJob( "Update pipeline" ) {
                 @Override
                 protected void runWithException( IProgressMonitor monitor ) throws Exception {
-                    log.info( "handleLayerCommit(): " + layer.label.get() );
+                    log.debug( "handleLayerCommit(): " + layer.label.get() );
                     DataSourceDescriptor dsd = fs.pipeline().dataSourceDescription();
                     Pipeline newPipeline = P4PipelineBuilder.forLayer( layer ).createPipeline( FeaturesProducer.class, dsd )
                             .orElseThrow( () -> new PipelineBuilderException( "Unable to build pipeline for: " + layer  ) );
@@ -181,7 +181,7 @@ public class FeatureLayer {
     
     protected FeatureLayer doConnectLayer( IProgressMonitor monitor ) throws PipelineBuilderException, Exception {
         assert fs == null;
-        log.info( "doConnectLayer(): " + layer.label.get() );
+        log.debug( "doConnectLayer(): " + layer.label.get() );
         // resolve service
         DataSourceDescriptor dsd = AllResolver.instance().connectLayer( layer, monitor )
                 .orElseThrow( () -> new RuntimeException( "No data source for layer: " + layer ) );
