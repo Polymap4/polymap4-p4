@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -136,12 +137,16 @@ public abstract class StyleEditor<I extends StyleEditorInput> {
         featureStyle.store();
     }
     
-    
+
+    /**
+     * called when the submit status has changed.
+     */
     protected abstract void enableSubmit( boolean enabled );
 
 
-    @EventHandler( display=true, delay=100 )
+    @EventHandler( display=true, delay=500 )
     protected void featureStyleCanged( List<StylePropertyChange> evs ) {
+        log.info( evs.stream().map( ev -> ev.getProp().getName() ).collect( Collectors.toList() ) );
         boolean enabled = fields.stream().allMatch( field -> field.isValid() );
         enableSubmit( enabled );
     }

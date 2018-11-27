@@ -62,7 +62,7 @@ import org.polymap.p4.catalog.ResourceInfoPanel;
 public class NewLayerContribution
         implements IFabContribution {
 
-    private static Log log = LogFactory.getLog( NewLayerContribution.class );
+    private static final Log log = LogFactory.getLog( NewLayerContribution.class );
     
     @Mandatory
     @Scope( P4Plugin.Scope )

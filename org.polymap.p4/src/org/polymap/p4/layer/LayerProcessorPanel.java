@@ -16,6 +16,7 @@ package org.polymap.p4.layer;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
@@ -24,13 +25,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+
+import org.eclipse.jface.action.Action;
 
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -64,6 +65,7 @@ import org.polymap.rhei.batik.Scope;
 import org.polymap.rhei.batik.toolkit.DefaultToolkit;
 import org.polymap.rhei.batik.toolkit.IPanelSection;
 import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
+import org.polymap.rhei.batik.toolkit.md.MdActionbar;
 import org.polymap.rhei.field.NumberValidator;
 
 import org.polymap.model2.runtime.UnitOfWork;
@@ -100,8 +102,8 @@ public class LayerProcessorPanel
     
     private Params                          params;
 
-    private Button                          fab;
-    
+    private Action                          submit;
+
 
     @Override
     public void init() {
@@ -160,11 +162,10 @@ public class LayerProcessorPanel
             }
         }
         
-        // FAB
-        fab = tk().createFab();
-//        fab.setVisible( false );
-//        fab.setEnabled( false );
-        fab.addSelectionListener( UIUtils.selectionListener( ev -> submit( ev ) ) );
+        // submit
+        MdActionbar ab = tk().createFloatingActionbar();
+        submit = ab.addSubmit( a -> submit() );
+        submit.setEnabled( false );
     }
     
     
@@ -213,12 +214,11 @@ public class LayerProcessorPanel
 
     
     protected void notifyChange( Param.UISupplier supplier ) {
-        fab.setVisible( true );
-        fab.setEnabled( true );
+        submit.setEnabled( true );
     }
 
 
-    protected void submit( SelectionEvent ev ) {
+    protected void submit() {
         TwoPhaseCommitOperation op = new TwoPhaseCommitOperation( "Submit layer" ) {
             @Override
             protected IStatus doWithCommit( IProgressMonitor monitor, IAdaptable info ) throws Exception {
@@ -234,8 +234,8 @@ public class LayerProcessorPanel
                 uow.close();
                 UIThreadExecutor.async( () -> {
                     tk().createSnackbar( Appearance.FadeIn, "Saved" );
-                    fab.setEnabled( false );
-                    fab.getDisplay().timerExec( 2500, () -> getContext().closePanel( site().path() ) );
+                    submit.setEnabled( false );
+                    UIUtils.sessionDisplay().timerExec( 2500, () -> getContext().closePanel( site().path() ) );
                 });
             }
             @Override

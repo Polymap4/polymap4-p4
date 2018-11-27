@@ -23,19 +23,20 @@ import org.opengis.feature.Property;
 
 import com.vividsolutions.jts.geom.Geometry;
 
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+
+import org.eclipse.jface.action.Action;
 
 import org.polymap.core.data.unitofwork.CommitOperation;
 import org.polymap.core.data.unitofwork.UnitOfWork;
 import org.polymap.core.operation.OperationSupport;
 import org.polymap.core.ui.ColumnLayoutFactory;
-import org.polymap.core.ui.SelectionListenerAdapter;
 import org.polymap.core.ui.StatusDispatcher;
 
 import org.polymap.rhei.batik.PanelIdentifier;
 import org.polymap.rhei.batik.contribution.ContributionManager;
 import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
+import org.polymap.rhei.batik.toolkit.md.MdActionbar;
 import org.polymap.rhei.field.FormFieldEvent;
 import org.polymap.rhei.field.IFormFieldListener;
 import org.polymap.rhei.form.DefaultFormPage;
@@ -62,11 +63,11 @@ public class FeaturePanel
     
     private UnitOfWork                  uow;
 
-    private Button                      fab;
-
     private BatikFormContainer          form;
 
     private boolean                     previouslyValid = true;
+
+    private Action                      submit;
     
 
     public FeatureStore fs() {
@@ -97,10 +98,9 @@ public class FeaturePanel
             
             form.addFieldListener( this );
             
-            fab = tk().createFab();
-            fab.setToolTipText( "Save changes" );
-            fab.setVisible( false );
-            fab.addSelectionListener( new SelectionListenerAdapter( ev -> submit() ) );
+            // submit
+            MdActionbar ab = tk().createFloatingActionbar();
+            submit = ab.addSubmit( a -> submit() );
 
             ContributionManager.instance().contributeTo( parent, this, ID.id() );
         }
@@ -116,8 +116,7 @@ public class FeaturePanel
             boolean isDirty = form.isDirty();
             boolean isValid = form.isValid();
             
-            fab.setVisible( isDirty  );
-            fab.setEnabled( isDirty && isValid );
+            submit.setEnabled( isDirty && isValid );
             
             if (previouslyValid && !isValid) {
                 tk().createSnackbar( Appearance.FadeIn, "There are invalid settings" );

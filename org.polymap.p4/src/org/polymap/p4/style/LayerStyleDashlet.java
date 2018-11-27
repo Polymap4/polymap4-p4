@@ -124,8 +124,7 @@ public class LayerStyleDashlet
                         });
                         
                         editor = new FeatureStyleEditor( editorInput ) {
-                            @Override
-                            protected void enableSubmit( boolean enabled ) {
+                            @Override protected void enableSubmit( boolean enabled ) {
                                 site().enableSubmit( enabled, enabled );
                             }
                         };

@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2015-2016, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2015-2018, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -17,17 +17,20 @@ package org.polymap.p4.style;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+
+import org.eclipse.jface.action.Action;
+
 import org.polymap.core.project.ILayer;
+
 import org.polymap.rhei.batik.Context;
 import org.polymap.rhei.batik.Mandatory;
 import org.polymap.rhei.batik.PanelIdentifier;
 import org.polymap.rhei.batik.Scope;
 import org.polymap.rhei.batik.contribution.ContributionManager;
 import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
+import org.polymap.rhei.batik.toolkit.md.MdActionbar;
+
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
 
@@ -51,7 +54,8 @@ public class LayerStylePanel
     
     private FeatureStyleEditor          editor;
 
-    private Button                      fab;
+    private Action submit;
+
 
 
 //    @Override
@@ -72,12 +76,8 @@ public class LayerStylePanel
         super.init();
         site().setSize( SIDE_PANEL_WIDTH, SIDE_PANEL_WIDTH, Integer.MAX_VALUE );
         this.editor = new FeatureStyleEditor( editorInput.get() ) {
-            @Override
-            protected void enableSubmit( boolean enabled ) {
-                if (fab != null && !fab.isDisposed()) {
-                    fab.setEnabled( enabled );
-                    fab.setVisible( enabled );
-                }
+            @Override protected void enableSubmit( boolean enabled ) {
+                submit.setEnabled( enabled );
             }
         };
     }
@@ -101,23 +101,22 @@ public class LayerStylePanel
         editor.createContents( parent, tk() );        
         //ContributionManager.instance().contributeTo( toolbar, this, TOOLBAR );
         
-        // fab
-        fab = tk().createFab();
-        fab.setVisible( false );
-        fab.setToolTipText( "Save changes" );
-        fab.addSelectionListener( new SelectionAdapter() {
-            @Override
-            public void widgetSelected( SelectionEvent ev ) {
-                editor.store();
+        // submit
+        MdActionbar ab = tk().createFloatingActionbar();
+        submit = ab.addSubmit( a -> submit() );
+        submit.setEnabled( false );
+    }
 
-                tk().createSnackbar( Appearance.FadeIn, "Saved" );
-                fab.setEnabled( false );
-                //fab.setVisible( false );
-                
-                ILayer layer = featureLayer.get().layer();
-                layer.styleIdentifier.set( layer.styleIdentifier.get() );
-            }
-        });
+    
+    protected void submit() {
+        editor.store();
+
+        tk().createSnackbar( Appearance.FadeIn, "Saved" );
+        submit.setEnabled( false );
+        //fab.setVisible( false );
+        
+        ILayer layer = featureLayer.get().layer();
+        layer.styleIdentifier.set( layer.styleIdentifier.get() );
     }
     
 }

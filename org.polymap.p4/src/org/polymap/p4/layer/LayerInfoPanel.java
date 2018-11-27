@@ -26,6 +26,8 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 
+import org.eclipse.jface.action.Action;
+
 import org.eclipse.ui.forms.events.ExpansionEvent;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -53,6 +55,7 @@ import org.polymap.rhei.batik.dashboard.SubmitStatusChangeEvent;
 import org.polymap.rhei.batik.toolkit.MinWidthConstraint;
 import org.polymap.rhei.batik.toolkit.PriorityConstraint;
 import org.polymap.rhei.batik.toolkit.Snackbar.Appearance;
+import org.polymap.rhei.batik.toolkit.md.MdActionbar;
 
 import org.polymap.p4.P4Panel;
 import org.polymap.p4.P4Plugin;
@@ -82,7 +85,7 @@ public class LayerInfoPanel
     
     private Dashboard                   dashboard;
 
-    private Button                      fab;
+    private Action                      submit;
 
     
     @Override
@@ -128,35 +131,31 @@ public class LayerInfoPanel
                     .findAny().ifPresent( dashlet -> dashboard.setExpanded( dashlet, true ) );
         });
         
-        // fab
-        fab = tk().createFab();
-        fab.setToolTipText( "Submit changes" );
-        fab.setVisible( false );
-        fab.addSelectionListener( new SelectionAdapter() {
-            @Override
-            public void widgetSelected( SelectionEvent ev ) {
-                try {
-                    dashboard.submit( new NullProgressMonitor() );
-                    tk().createSnackbar( Appearance.FadeIn, "Saved" );
-                }
-                catch (Exception e) {
-                    StatusDispatcher.handleError( "Unable to submit all changes.", e );
-                }
-            }
-        });
-        
+        // submit
+        MdActionbar ab = tk().createFloatingActionbar();
+        submit = ab.addSubmit( a -> submit() );
+        submit.setEnabled( false );
+
         EventManager.instance().subscribe( this, ifType( SubmitStatusChangeEvent.class, ev -> {
             return ev.getDashboard() == dashboard;
         }));
     }
 
     
-    @EventHandler( display=true )
-    protected void submitStatusChanged( SubmitStatusChangeEvent ev ) {
-        if (fab != null && !fab.isDisposed()) {
-            fab.setVisible( fab.isVisible() || dashboard.isDirty() );
-            fab.setEnabled( dashboard.isDirty() && dashboard.isValid() );
+    protected void submit() {
+        try {
+            dashboard.submit( new NullProgressMonitor() );
+            tk().createSnackbar( Appearance.FadeIn, "Saved" );
         }
+        catch (Exception e) {
+            StatusDispatcher.handleError( "Unable to submit all changes.", e );
+        }
+    }
+    
+    
+    @EventHandler( display=true )
+    protected void onSubmitStatusChanged( SubmitStatusChangeEvent ev ) {
+        submit.setEnabled( dashboard.isDirty() && dashboard.isValid() );
     }
     
     
