@@ -101,6 +101,7 @@ public class FeaturePanel
             // submit
             MdActionbar ab = tk().createFloatingActionbar();
             submit = ab.addSubmit( a -> submit() );
+            submit.setEnabled( false );
 
             ContributionManager.instance().contributeTo( parent, this, ID.id() );
         }
