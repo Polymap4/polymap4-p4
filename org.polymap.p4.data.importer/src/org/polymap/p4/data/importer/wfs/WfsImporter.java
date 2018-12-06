@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.URL;
 
 import org.geotools.data.Query;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -170,11 +169,20 @@ public class WfsImporter
                 ds.dispose();
             }
             if (url != null) {
-                Map<String,Serializable> params = new HashMap();
-                URL getCapabilities = WFSDataStoreFactory.createGetCapabilitiesRequest( new URL( url ) );
-                log.info( "URL: " + getCapabilities );
-                params.put( WFSDataStoreFactory.URL.key, getCapabilities );
-                params.put( WFSDataStoreFactory.TIMEOUT.key, 10000 );
+                
+                // this is buggy and does not (in contrast to doc) recognize VERSION=
+                //URL getCapabilities = WFSDataStoreFactory.createGetCapabilitiesRequest( new URL( url ) );
+                
+                // normalize URL
+                String delim = !url.contains( "?" ) ? "?" : "&";
+                url += !url.toUpperCase().contains( "SERVICE=" ) ? (delim + "SERVICE=WFS") : "";
+                url += !url.toUpperCase().contains( "VERSION=" ) ? "&VERSION=1.0.0" : "";
+                
+                String getcap = url + (!url.toUpperCase().contains( "REQUEST=" ) ? "&REQUEST=GetCapabilities" : "");   
+                log.info( "URL: " + getcap );
+                Map<String,Serializable> params = new HashMap();                
+                params.put( WFSDataStoreFactory.URL.key, getcap );
+                params.put( WFSDataStoreFactory.TIMEOUT.key, 30000 );
 
                 ds = (WFSDataStore)dsf.createDataStore( params );
 
